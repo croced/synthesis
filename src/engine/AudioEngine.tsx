@@ -1,8 +1,5 @@
-import * as _ from "lodash";
 import { IStatusMessage } from "./MIDIEngine";
 import { noteToFreq } from "../util/util";
-
-const EXTENSIVE_LOGGING = process.env.EXTENSIVE_LOGGING;
 
 // External facing interfaces (e.g. can be saved as JSON files)
 interface IOscillator {
@@ -22,43 +19,21 @@ interface InternalOscillator {
 
 const oscillatorMap: InternalOscillator[] = [];
 
-var currentMidiEvents: IStatusMessage[] = [];
-
 /**
- * Used to 'pipe' MIDI events into the AudioEngine, where we can
- * then handle them.
+ * Handles a MIDI event by setting up the relative WebAudioAPI 
+ * nodes according to the synthesiser provided (and playing
+ * the notes).
+ * 
  * @param event IStatusMessage - the (parsed) MIDI event to handle
  * @param audioCtx - our WebAudioAPI AudioContext
  * @param synthesiser - the synthesiser object to play this event on
  * @returns 
  */
 
-export function pipeMidiEvent(event: IStatusMessage, audioCtx: AudioContext, synthesiser: ISynthesiser) {
-
-
-    log('-------------- PIPE MIDI EVENT --------------')
-    log(`event: ${JSON.stringify(event.id)}`);
-
-   if (currentMidiEvents.find((e) => (e.id === event.id)))
-    {
-        log(`event \'${event.id}\' already in pipe!`);
-        return;
-    }
-
-    currentMidiEvents.push(event);
-    handleMidiEvent(event, audioCtx, synthesiser);
-}
-
-//TODO: Debounce handling of notes OR only allow 1 note of the same pitch
-//          to be played at any time (check if note is already playing before
-//          creating a new oscillator).
-
 export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, synthesiser: ISynthesiser) {
 
-    log('-------------- HANDLE MIDI EVENT --------------')
-    // log(`synth: ${synthesiser.oscillators.length}`)
-
     if (!event) return;
+    log('-------------- HANDLE MIDI EVENT --------------')
 
     const note = event.pitch! || 0;
 
@@ -66,8 +41,7 @@ export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, s
         
         if (event.message === "noteOn")
         {                    
-            log(`-> noteOn event @ pitch ${note}`);
-            log(`-> playing above note on oscillator: ${JSON.stringify(iOsc)})}`);
+            log(`-> playing note ${note} on oscillator: ${JSON.stringify(iOsc)})}`);
 
             const oscillator = audioCtx.createOscillator();
 
@@ -80,17 +54,17 @@ export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, s
             
             oscillatorMap.push({pitch: note, oscillator});
 
-            log(`---> afterplay nodemap: ${JSON.stringify(oscillatorMap)}`);
-
         } else if ((event.message === "noteOff") || (event.message === "noteOn" && event.velocity === 0)) {
 
-            log(`-> noteOff event @ pitch ${note}`);
-            
+            log(`-> stopping note ${note} on oscillator: ${JSON.stringify(iOsc)})}`);
+
             oscillatorMap.map((osc, index) => {
                 if (osc.pitch === note) {
                     osc.oscillator.stop();
-                    oscillatorMap.splice(index, 1);
+                    return oscillatorMap.splice(index, 1);
                 }
+
+                return oscillatorMap;
             });
 
         } else if (event.message === "pitchBend")
@@ -99,10 +73,13 @@ export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, s
         }
     });
     
-    currentMidiEvents.splice(currentMidiEvents.indexOf(event), 1);
 }
 
+/**
+ * AudioEngine logging function, only logs if REACT_APP_EXTENSIVE_LOGGING is set.
+ * @param message - the message to log
+ */
 const log = (message: any) => {
-    if (EXTENSIVE_LOGGING)
+    if (process.env.REACT_APP_EXTENSIVE_LOGGING)
         console.log(`[AudioEngine] ${message}`);
 }
