@@ -7,8 +7,14 @@ interface IOscillator {
     detune?: number;
 }
 
-export interface ISynthesiser {
+interface IMixer {
+    type: "volume" | "AM" | "FM";
+    mix: number;
+}
+
+export interface IPatch {
     oscillators: IOscillator[];
+    mixer: IMixer;
 }
 
 // Internal interfaces, used for WebAudioAPI
@@ -21,46 +27,58 @@ const oscillatorMap: InternalOscillator[] = [];
 
 /**
  * Handles a MIDI event by setting up the relative WebAudioAPI 
- * nodes according to the synthesiser provided (and playing
+ * nodes according to the patch provided (and playing
  * the notes).
  * 
  * @param event IStatusMessage - the (parsed) MIDI event to handle
  * @param audioCtx - our WebAudioAPI AudioContext
- * @param synthesiser - the synthesiser object to play this event on
+ * @param patch - the patch object to play this event on
  * @returns 
  */
 
-export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, synthesiser: ISynthesiser) {
+export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, patch: IPatch) {
 
     if (!event) return;
     log('-------------- HANDLE MIDI EVENT --------------')
 
     const note = event.pitch! || 0;
 
-    synthesiser.oscillators.forEach((iOsc) => {
+    patch.oscillators.forEach((osc, oscId) => {
         
         if (event.message === "noteOn")
         {                    
-            log(`-> playing note ${note} on oscillator: ${JSON.stringify(iOsc)})}`);
+            log(`-> playing note ${note} on oscillator: ${JSON.stringify(osc)})}`);
 
+            // creating oscillator
             const oscillator = audioCtx.createOscillator();
-
-            oscillator.type = iOsc.waveType;
+            oscillator.type = osc.waveType;
             oscillator.frequency.value = noteToFreq(note);
-            oscillator.detune.value = iOsc.detune || 0;
+            oscillator.detune.value = osc.detune || 0;
 
-            oscillator.connect(audioCtx.destination);
+            // perform mixing
+            if (patch.mixer.type === "volume")
+            {
+                const mixGain = audioCtx.createGain();
+                const mixValue = (oscId === 0 ? 1 - patch.mixer.mix : patch.mixer.mix);
+                mixGain.gain.value = mixValue;
+    
+                oscillator.connect(mixGain).connect(audioCtx.destination);
+            }
+            // todo: account for AM & FM
+            else oscillator.connect(audioCtx.destination);
+            
             oscillator.start();
             
             oscillatorMap.push({pitch: note, oscillator});
 
         } else if ((event.message === "noteOff") || (event.message === "noteOn" && event.velocity === 0)) {
 
-            log(`-> stopping note ${note} on oscillator: ${JSON.stringify(iOsc)})}`);
+            log(`-> stopping note ${note} on oscillator: ${JSON.stringify(osc)})}`);
 
-            oscillatorMap.map((osc, index) => {
-                if (osc.pitch === note) {
-                    osc.oscillator.stop();
+            oscillatorMap.map((_osc, index) => {
+                if (_osc.pitch === note) {
+                    _osc.oscillator.stop();
+                    _osc.oscillator.disconnect();
                     return oscillatorMap.splice(index, 1);
                 }
 

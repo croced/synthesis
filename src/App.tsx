@@ -1,9 +1,8 @@
-import { isNumber } from 'lodash';
 import React, { useEffect, useRef, useState } from 'react';
-import { ISynthesiser, handleMidiEvent } from './engine/AudioEngine';
+import { IPatch, handleMidiEvent } from './engine/AudioEngine';
 import { GetMIDIMessage } from './engine/MIDIEngine';
 
-const initialSynth: ISynthesiser = {
+const initialPatch: IPatch = {
     oscillators: [
         {
             waveType: "sine",
@@ -14,6 +13,10 @@ const initialSynth: ISynthesiser = {
             detune: 0
         },
     ],
+    mixer: {
+      type: "volume",
+      mix: 0.5
+    }
 };
 
 const App: React.FC = () => {
@@ -23,11 +26,12 @@ const App: React.FC = () => {
 
   const [contextStarted, setContextStarted] = useState(false);
 
-  const [synthesiser, setSynthesiser] = useState<ISynthesiser>(initialSynth);
+  const [patch, setPatch] = useState<IPatch>(initialPatch);
   
   /**
    * Initialise the AudioContext on mount, and close it on unmount.
    */
+
   useEffect(() => {
 
     audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -79,7 +83,7 @@ const App: React.FC = () => {
         input[1].removeEventListener('midimessage', inputListener);
       });
     }
-  }, [midiAccess, synthesiser]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [midiAccess, patch]); // eslint-disable-line react-hooks/exhaustive-deps
   
   const onMIDISuccess = (_midiAccess: WebMidi.MIDIAccess) => {
     setMidiAccess(_midiAccess);
@@ -94,7 +98,7 @@ const App: React.FC = () => {
     const midiMessage = GetMIDIMessage(event.data);
 
     if (midiMessage.message !== "unknown")            
-      handleMidiEvent(midiMessage, audioContext.current!, synthesiser)
+      handleMidiEvent(midiMessage, audioContext.current!, patch)
 
     else log(midiMessage)
   }
@@ -114,13 +118,13 @@ const App: React.FC = () => {
 
   const handleWaveTypeChange = (event: React.ChangeEvent<HTMLSelectElement>, osc: 0 | 1) => {
 
-    let oscillators = [...synthesiser.oscillators];
+    let oscillators = [...patch.oscillators];
     let oscillator = {...oscillators[osc]}; 
     oscillator.waveType = event.target.value as "sine" | "square" | "sawtooth" | "triangle";
     oscillators[osc] = oscillator;
 
-    setSynthesiser({
-      ...synthesiser,
+    setPatch({
+      ...patch,
       oscillators
     });
       
@@ -136,22 +140,22 @@ const App: React.FC = () => {
     else if (detuneValue < -1200)
       detuneValue = -1200;
 
-    let oscillators = [...synthesiser.oscillators];
+    let oscillators = [...patch.oscillators];
     let oscillator = {...oscillators[osc]}; 
     oscillator.detune = detuneValue;
     oscillators[osc] = oscillator;
 
-    setSynthesiser({
-      ...synthesiser,
+    setPatch({
+      ...patch,
       oscillators
     });
       
   }
 
   const renderOscillators = () => {
-    console.log(synthesiser.oscillators.length);
+    console.log(patch.oscillators.length);
 
-    return initialSynth.oscillators.map((osc, i) => {
+    return initialPatch.oscillators.map((osc, i) => {
       return (
         <div key={`osc-${i}`}>
           <h1>OSC. {i + 1}</h1>
@@ -164,17 +168,52 @@ const App: React.FC = () => {
           </select>
           <br />
           <br />
-          <label htmlFor="oscillatorDetune">Detune:</label>
-          <input type="number" name="oscillatorDetune" id="oscillatorDetune" min="-1200" max="1200" onChange={(e) => handleOscDetuneChange(e, i as 0 | 1)}/>
+          <label htmlFor="oscillatorDetuneSlider">Detune:</label>
+          <input type="range" name="oscillatorDetuneSlider" id="oscillatorDetuneSlider" min="-1200" max="1200" step="1" value={patch.oscillators[i].detune} onChange={(e) => handleOscDetuneChange(e, i as 0 | 1)}/>
+          <input type="number" name="oscillatorDetune" id="oscillatorDetune" min="-1200" max="1200" value={patch.oscillators[i].detune} onChange={(e) => handleOscDetuneChange(e, i as 0 | 1)}/>
         </div>
       )
     });
 
   }
 
+  const handleVolMixChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    let mixValue: number = parseFloat(event.target.value);
+    if (isNaN(mixValue)) return;
+
+    if (mixValue > 1)
+      mixValue = 1;
+    else if (mixValue < 0)
+      mixValue = 0;
+
+      let mixer = {...patch.mixer}; 
+      mixer.mix = mixValue;
+      mixer = mixer;
+  
+      setPatch({
+        ...patch,
+        mixer
+      });
+
+  }
+
+  const renderMixer = () => {
+    return (
+      <div>
+        <h1>Mixer</h1>
+        <label htmlFor="oscillatorMixSlider">Mix:</label>
+        <input type="range" name="oscillatorMixSlider" id="oscillatorMixSlider" min="0" max="1" step="0.01" value={patch.mixer.mix} onChange={handleVolMixChange}/>
+        <input type="number" name="oscillatorMix" id="oscillatorMix" min="0" max="1" step="0.1" value={patch.mixer.mix} onChange={handleVolMixChange}/>
+        <p>L: OSC.1</p>
+        <p>R: OSC.2</p>
+      </div>
+    );
+  }
+
   return (
       <div className="App">
         {renderOscillators()}
+        {renderMixer()}
       </div>
   );
 }
