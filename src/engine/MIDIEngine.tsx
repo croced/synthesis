@@ -1,10 +1,4 @@
-const inRange = (num: number, min: number, max: number) => {
-    return num >= min && num <= max;
-}
-
-interface IStatusRange {
-    [key: string]: [number, number];
-}
+import { inRange } from "../util/util";
 
 export interface IStatusMessage {
     id: string;
@@ -19,6 +13,20 @@ export interface IStatusMessage {
     value?: number | null;
     bendLSB?: number | null;
     bendMSB?: number | null;
+};
+
+/**
+ * Status Ranges describe the boundaries of MIDI status
+ * messages (e.g. noteOn, noteOff, etc.) as a numerical
+ * range (e.g. 0x80 - 0x8F) which we can check against.
+ * 
+ * For example, a status byte of 0x90 is in the range
+ * of noteOn messages (0x90 - 0x9F) - so we can
+ * determine that this is a noteOn message.
+ */
+
+export interface IStatusRange {
+    [key: string]: [number, number];
 }
 
 const StatusRanges: IStatusRange = {
@@ -29,16 +37,33 @@ const StatusRanges: IStatusRange = {
     programChange: [0xC0, 0xCF],
     channelAfterTouch: [0xD0, 0xDF],
     pitchBend: [0xE0, 0xEF],
+};
+
+const inStatusRange = (status: number, rangeName: string) => {
+    if (!StatusRanges[rangeName]) throw new Error(`Invalid status range name: ${rangeName}`);
+    return inRange(status, StatusRanges[rangeName][0], StatusRanges[rangeName][1]);
 }
 
-// todo: remove 'any' typing here
-export const GetMIDIMessage = (data: any): IStatusMessage => {
-    const status = data[0];
-    const secondByte = data[1];
-    const thirdByte = data[2];
-    const id: string = `${status}-${secondByte}-${thirdByte}`;
+/**
+ * GetMIDIMessage parses MIDI message event data and returns a (parsed) 
+ * status message object.
+ * 
+ * @param data arrray containing the MIDI message data. This data 
+ *  is obtained from the MIDIMessageEvent.data property
+ * @returns the parsed MIDI message
+ */
 
-    if (inRange(status, StatusRanges.noteOff[0], StatusRanges.noteOff[1]) || (inRange(status, StatusRanges.noteOn[0], StatusRanges.noteOn[1]) && thirdByte === 0))
+export const GetMIDIMessage = (data: Uint8Array): IStatusMessage => {
+    const status: number = data[0];
+    const secondByte: number = data[1];
+    const thirdByte: number = data[2];
+    
+    const id: string = `${status}-${secondByte}-${thirdByte}` || "unknown";
+
+    // 2 types of messages can signify a noteOff:
+    // 1. status byte is in the range of noteOff (typical noteOff event)
+    // 2. status byte is in the range of noteOn, but the velocity is 0 (noteOn event with velocity 0)
+    if (inStatusRange(status, "noteOff") || (inStatusRange(status, "noteOn") && thirdByte === 0))
         return {
             id,
             message: "noteOff",
@@ -46,7 +71,7 @@ export const GetMIDIMessage = (data: any): IStatusMessage => {
             pitch: secondByte,
             velocity: thirdByte,
         };
-    else if (inRange(status, StatusRanges.noteOn[0], StatusRanges.noteOn[1]))
+    else if (inStatusRange(status, "noteOn"))
         return {
             id,
             message: "noteOn",
@@ -54,7 +79,7 @@ export const GetMIDIMessage = (data: any): IStatusMessage => {
             pitch: secondByte,
             velocity: thirdByte,
         };
-    else if (inRange(status, StatusRanges.polyAfterTouch[0], StatusRanges.polyAfterTouch[1]))
+    else if (inStatusRange(status, "polyAfterTouch"))
         return {
             id,
             message: "polyAfterTouch",
@@ -62,7 +87,7 @@ export const GetMIDIMessage = (data: any): IStatusMessage => {
             key: secondByte,
             pressure: thirdByte,
         };
-    else if (inRange(status, StatusRanges.channelControl[0], StatusRanges.channelControl[1]))
+    else if (inStatusRange(status, "channelControl"))
         return {
             id,
             message: "channelControl",
@@ -70,21 +95,21 @@ export const GetMIDIMessage = (data: any): IStatusMessage => {
             controller: secondByte,
             value: thirdByte,
         };
-    else if (inRange(status, StatusRanges.programChange[0], StatusRanges.programChange[1]))
+    else if (inStatusRange(status, "programChange"))
         return {
             id,
             message: "programChange",
             channel: (status - StatusRanges.programChange[0]) + 1,
             preset: secondByte,
         };
-    else if (inRange(status, StatusRanges.channelAfterTouch[0], StatusRanges.channelAfterTouch[1]))
+    else if (inStatusRange(status, "channelAfterTouch"))
         return {
             id,
             message: "channelAftertouch",
             channel: (status - StatusRanges.channelAfterTouch[0]) + 1,
             pressure: secondByte,
         };
-    else if (inRange(status, StatusRanges.pitchBend[0], StatusRanges.pitchBend[1]))
+    else if (inStatusRange(status, "pitchBend"))
         return {
             id,
             message: "pitchBend",

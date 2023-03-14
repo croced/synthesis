@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IPatch, handleMidiEvent } from './engine/AudioEngine';
-import { GetMIDIMessage } from './engine/MIDIEngine';
+import { GetMIDIMessage, IStatusMessage } from './engine/MIDIEngine';
+
+/**
+ * The initial patch to use when the view is loaded.
+ */
 
 const initialPatch: IPatch = {
     oscillators: [
@@ -15,21 +19,31 @@ const initialPatch: IPatch = {
     ],
     mixer: {
       type: "volume",
-      mix: 0.5
+      mix: 0.5,
+      carrierOsc: 0,
+      fmModIndex: 50
     }
 };
 
 const App: React.FC = () => {
 
   const audioContext = useRef<AudioContext | null>(null);
-  const [midiAccess, setMidiAccess] = useState<WebMidi.MIDIAccess | null>(null);
-
+  const [midiAccess, setMidiAccess] = useState<WebMidi.MIDIAccess | null | undefined>(null);
   const [contextStarted, setContextStarted] = useState(false);
 
   const [patch, setPatch] = useState<IPatch>(initialPatch);
   
   /**
-   * Initialise the AudioContext on mount, and close it on unmount.
+   * * Initialise the AudioContext on mount, and close it on unmount.
+   * * Request MIDI access.
+   * 
+   * ********************************************************************
+   * Note: because we suspend the AudioContext on unmount, we need to
+   * refresh the page to get it to work again during live development.
+   * 
+   * todo: Find a way to refresh the AudioContext without having to refresh 
+   *        the page.
+   * ********************************************************************
    */
 
   useEffect(() => {
@@ -55,19 +69,25 @@ const App: React.FC = () => {
     };
   }, []);
 
+  
+  const startAudioContext = () => {
+    console.log("Starting audio context...");
+    audioContext.current!.resume();
+    setContextStarted(true);
+  }
+
   /**
    * Set up the MIDI input listeners when the MIDI access changes.
    * MIDI access is set when the user grants permission to use their MIDI devices.
    */
 
-  const prevSynth = useRef();
-
   useEffect(() => {
     if (!midiAccess)
       return;
 
-    function inputListener(message: any) {
-      parseMessage(message);
+    function inputListener(message: WebMidi.MIDIMessageEvent | null) {
+      if (!message || !message.data) return;
+      handleMessage(message);
     } 
 
     Array.from(midiAccess.inputs).forEach((input) => {
@@ -76,11 +96,10 @@ const App: React.FC = () => {
     });
     
     return () => {
-      log("tes");
       log("Removing MIDI listeners...");
       
       Array.from(midiAccess.inputs).forEach((input) => {
-        input[1].removeEventListener('midimessage', inputListener);
+        return input[1].removeEventListener('midimessage', inputListener as EventListener);
       });
     }
   }, [midiAccess, patch]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -94,19 +113,20 @@ const App: React.FC = () => {
       console.log(event);
   }
 
-  function parseMessage(event: { data: any; }) {
-    const midiMessage = GetMIDIMessage(event.data);
+  /**
+   * Handle raw MIDI messages by converting them to a more
+   * readable format, and then passing them to the audio engine.
+   * 
+   * @param event The raw MIDI message event.
+   */
+  
+  function handleMessage(event: WebMidi.MIDIMessageEvent) {
+    const midiMessage: IStatusMessage = GetMIDIMessage(event.data);
 
     if (midiMessage.message !== "unknown")            
       handleMidiEvent(midiMessage, audioContext.current!, patch)
 
     else log(midiMessage)
-  }
-
-  const startAudioContext = () => {
-      console.log("Starting audio context...");
-      audioContext.current!.resume();
-      setContextStarted(true);
   }
 
   if (!contextStarted) return (
@@ -188,24 +208,96 @@ const App: React.FC = () => {
 
       let mixer = {...patch.mixer}; 
       mixer.mix = mixValue;
-      mixer = mixer;
   
       setPatch({
         ...patch,
         mixer
       });
+  }
 
+  const handleMixerTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    let mixer = {...patch.mixer};
+    mixer.type = event.target.value as "volume" | "am" | "fm";
+
+    setPatch({
+      ...patch,
+      mixer
+    });
+  };
+
+  const handleCarrierSignalChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const carrierSignal = parseInt(event.target.value) as 0 | 1;
+    if (isNaN(carrierSignal)) return;
+
+    let mixer = {...patch.mixer};
+    mixer.carrierOsc = carrierSignal;
+
+    setPatch({
+      ...patch,
+      mixer
+    });
+  }
+
+  const renderCarrierSelect = () => {
+    return (
+      <div>
+        <label htmlFor="carrierSignal">Carrier Signal</label>
+        <select name="carrierSignal" id="carrierSignal" onChange={handleCarrierSignalChange}>
+            <option value="0">OSC. 1</option>
+            <option value="1">OSC. 2</option>
+        </select>
+      </div>
+    )
+  };
+
+
+  const handleFmIndexChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const fmIndex = parseInt(event.target.value);
+    if (isNaN(fmIndex)) return;
+
+    let mixer = {...patch.mixer};
+    mixer.fmModIndex = fmIndex;
+
+    setPatch({
+      ...patch,
+      mixer
+    });
+  }
+
+  const renderFmIndexSelect = () => {
+    return (
+      <div>
+        <label htmlFor="fmIndexSelect">Modulation:</label>
+        <input type="range" name="fmIndexSelectSlider" id="fmIndexSelectSlider" min="0" max="100" step="1" value={patch.mixer.fmModIndex} onChange={handleFmIndexChange}/>
+        <input type="number" name="fmIndexSelect" id="fmIndexSelect" min="0" max="100" step="1" value={patch.mixer.fmModIndex} onChange={handleVolMixChange}/>
+      </div>
+    ); 
   }
 
   const renderMixer = () => {
     return (
       <div>
         <h1>Mixer</h1>
-        <label htmlFor="oscillatorMixSlider">Mix:</label>
-        <input type="range" name="oscillatorMixSlider" id="oscillatorMixSlider" min="0" max="1" step="0.01" value={patch.mixer.mix} onChange={handleVolMixChange}/>
-        <input type="number" name="oscillatorMix" id="oscillatorMix" min="0" max="1" step="0.1" value={patch.mixer.mix} onChange={handleVolMixChange}/>
-        <p>L: OSC.1</p>
-        <p>R: OSC.2</p>
+
+        <label htmlFor="mixerTypes">Mix type:</label>
+          <select name="mixerTypes" id="mixerTypes" onChange={handleMixerTypeChange}>
+            <option value="volume">Additive</option>
+            <option value="am">AM</option>
+            <option value="fm">FM</option>
+        </select>
+
+        {(patch.mixer.type === "am" || patch.mixer.type === "fm") && renderCarrierSelect()}
+        <br />
+        {patch.mixer.type === "fm" && renderFmIndexSelect()}
+        {patch.mixer.type == "volume" && (
+          <div>
+            <label htmlFor="oscillatorMixSlider">Mix:</label>
+            <input type="range" name="oscillatorMixSlider" id="oscillatorMixSlider" min="0" max="1" step="0.01" value={patch.mixer.mix} onChange={handleVolMixChange}/>
+            <input type="number" name="oscillatorMix" id="oscillatorMix" min="0" max="1" step="0.1" value={patch.mixer.mix} onChange={handleVolMixChange}/>
+            <p>L: OSC.1</p>
+            <p>R: OSC.2</p>
+          </div>
+        )}
       </div>
     );
   }

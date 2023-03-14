@@ -1,6 +1,8 @@
 import { IStatusMessage } from "./MIDIEngine";
 import { noteToFreq } from "../util/util";
 
+const MAX_VOLUME = 0.5 as const;
+
 // External facing interfaces (e.g. can be saved as JSON files)
 interface IOscillator {
     waveType: "sine" | "square" | "sawtooth" | "triangle";
@@ -8,8 +10,10 @@ interface IOscillator {
 }
 
 interface IMixer {
-    type: "volume" | "AM" | "FM";
+    type: "volume" | "am" | "fm";
     mix: number;
+    carrierOsc?: 0 | 1; // only used for AM & FM, 0 = osc1, 1 = osc2
+    fmModIndex?: number;
 }
 
 export interface IPatch {
@@ -20,7 +24,8 @@ export interface IPatch {
 // Internal interfaces, used for WebAudioAPI
 interface InternalOscillator {
     pitch: number;
-    oscillator: OscillatorNode;
+    osc1: OscillatorNode;
+    osc2: OscillatorNode;
 }
 
 const oscillatorMap: InternalOscillator[] = [];
@@ -42,55 +47,127 @@ export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, p
     log('-------------- HANDLE MIDI EVENT --------------')
 
     const note = event.pitch! || 0;
+    const noteFreq = noteToFreq(note);
 
-    patch.oscillators.forEach((osc, oscId) => {
-        
-        if (event.message === "noteOn")
-        {                    
-            log(`-> playing note ${note} on oscillator: ${JSON.stringify(osc)})}`);
+    if (event.message === "noteOn")
+    {
+        log(`-> noteon detected: ${note}`);
+        log(`-> mixer: ${JSON.stringify(patch.mixer)})}`);
 
-            // creating oscillator
-            const oscillator = audioCtx.createOscillator();
-            oscillator.type = osc.waveType;
-            oscillator.frequency.value = noteToFreq(note);
-            oscillator.detune.value = osc.detune || 0;
+        // master volume gain node
+        const masterVolume = audioCtx.createGain();
+        masterVolume.gain.value = MAX_VOLUME;
 
-            // perform mixing
-            if (patch.mixer.type === "volume")
-            {
-                const mixGain = audioCtx.createGain();
-                const mixValue = (oscId === 0 ? 1 - patch.mixer.mix : patch.mixer.mix);
-                mixGain.gain.value = mixValue;
-    
-                oscillator.connect(mixGain).connect(audioCtx.destination);
-            }
-            // todo: account for AM & FM
-            else oscillator.connect(audioCtx.destination);
-            
-            oscillator.start();
-            
-            oscillatorMap.push({pitch: note, oscillator});
+        // create oscillator nodes
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
 
-        } else if ((event.message === "noteOff") || (event.message === "noteOn" && event.velocity === 0)) {
+        osc1.type = patch.oscillators[0].waveType;
+        osc1.frequency.value = noteFreq;
+        osc1.detune.value = patch.oscillators[0].detune || 0;
 
-            log(`-> stopping note ${note} on oscillator: ${JSON.stringify(osc)})}`);
+        osc2.type = patch.oscillators[1].waveType;
+        osc2.frequency.value =noteFreq;
+        osc2.detune.value = patch.oscillators[1].detune || 0;
 
-            oscillatorMap.map((_osc, index) => {
-                if (_osc.pitch === note) {
-                    _osc.oscillator.stop();
-                    _osc.oscillator.disconnect();
-                    return oscillatorMap.splice(index, 1);
-                }
+        // todo: pre-mix filters can go here
 
-                return oscillatorMap;
-            });
-
-        } else if (event.message === "pitchBend")
+        // perform mixing
+        switch (patch.mixer.type)
         {
-            log(`-> pitchBend event @ bendLSB ${event.bendLSB} : bendMSB ${event.bendMSB}`);
+            case "volume":
+                {
+                    const osc1Gain = audioCtx.createGain();
+                    const osc2Gain = audioCtx.createGain();
+
+                    osc1Gain.gain.value = 1 - patch.mixer.mix;
+                    osc2Gain.gain.value = patch.mixer.mix;
+
+                    osc1.connect(osc1Gain);
+                    osc2.connect(osc2Gain);
+
+                    osc1Gain.connect(masterVolume);
+                    osc2Gain.connect(masterVolume);
+                }
+                break;
+            case "am":
+                {            
+                    const carrierGain = audioCtx.createGain();
+                    const modulatorGain = audioCtx.createGain();
+                    
+                    if (patch.mixer.carrierOsc === 0)
+                    {
+                        osc1.connect(carrierGain);
+                        osc2.connect(modulatorGain);
+
+                        carrierGain.connect(masterVolume);
+                        modulatorGain.connect(carrierGain.gain);
+                    } 
+                    else
+                    {
+                        osc1.connect(modulatorGain);
+                        osc2.connect(carrierGain);
+                        
+                        carrierGain.connect(masterVolume);
+                        modulatorGain.connect(carrierGain.gain);
+                    }
+                }
+                break;
+            case "fm":
+                {
+                    const modulatorGain = audioCtx.createGain();
+                    modulatorGain.gain.value = patch.mixer.fmModIndex || 50;
+
+                    if (patch.mixer.carrierOsc === 0)
+                    {
+                        osc2.connect(modulatorGain);
+                        modulatorGain.connect(osc1.detune);
+                        osc1.connect(masterVolume);
+                    }
+                    else
+                    {
+                        osc1.connect(modulatorGain);
+                        modulatorGain.connect(osc2.detune);
+                        osc2.connect(masterVolume);
+                    }
+                }
+                break;
+            default:
+                break;
         }
-    });
-    
+        
+        // todo: post-mix filters can go here
+
+        masterVolume.connect(audioCtx.destination);
+
+        osc1.start();
+        osc2.start();
+
+        oscillatorMap.push({ pitch: note, osc1, osc2 });
+        console.log(`-> oscillatorMap:`, oscillatorMap);
+    }
+    else if (event.message === "noteOff") 
+    {
+        log(`-> noteof event detected for note: ${note}`);
+
+        oscillatorMap.map((osc, index) => {
+            if (osc.pitch === note) {
+                osc.osc1.disconnect();
+                osc.osc2.disconnect();
+
+                osc.osc1.stop();
+                osc.osc2.stop();
+                return oscillatorMap.splice(index, 1);
+            }
+
+            return oscillatorMap;
+        });
+
+    } 
+    else if (event.message === "pitchBend")
+    {
+        log(`-> pitchBend event @ bendLSB ${event.bendLSB} : bendMSB ${event.bendMSB}`);
+    }  
 }
 
 /**
