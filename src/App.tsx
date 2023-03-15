@@ -1,6 +1,6 @@
 import React from 'react';
 import { defaultPatch, PatchContext } from './context/PatchContext';
-import SynthView from './views/SynthView';
+import SynthView from './views/SynthView/SynthView';
 
 
 const App: React.FC = () => {
