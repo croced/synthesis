@@ -12,8 +12,8 @@ interface IOscillator {
 interface IMixer {
     type: "volume" | "am" | "fm";
     mix: number;
-    carrierOsc?: 0 | 1; // only used for AM & FM, 0 = osc1, 1 = osc2
-    fmModIndex?: number;
+    carrierOsc?: 0 | 1;     // only used for AM & FM, 0 = osc1, 1 = osc2
+    fmModIndex?: number;    // only used for FM
 }
 
 export interface IPatch {
@@ -70,6 +70,17 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
         osc2.frequency.value =noteFreq;
         osc2.detune.value = patch.oscillators[1].detune || 0;
 
+        // velocity gain node
+        const scaledVelocity = (event.velocity || 64) / 127;
+
+        const osc1v = audioCtx.createGain();
+        osc1v.gain.value = scaledVelocity;
+        const osc2v = audioCtx.createGain();
+        osc2v.gain.value = scaledVelocity;
+        
+        osc1.connect(osc1v);
+        osc2.connect(osc2v);
+
         // todo: pre-mix filters can go here
 
         // perform mixing
@@ -83,8 +94,8 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
                     osc1Gain.gain.value = 1 - patch.mixer.mix;
                     osc2Gain.gain.value = patch.mixer.mix;
 
-                    osc1.connect(osc1Gain);
-                    osc2.connect(osc2Gain);
+                    osc1v.connect(osc1Gain);
+                    osc2v.connect(osc2Gain);
 
                     osc1Gain.connect(masterVolume);
                     osc2Gain.connect(masterVolume);
@@ -97,16 +108,16 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
                     
                     if (patch.mixer.carrierOsc === 0)
                     {
-                        osc1.connect(carrierGain);
-                        osc2.connect(modulatorGain);
+                        osc1v.connect(carrierGain);
+                        osc2v.connect(modulatorGain);
 
                         carrierGain.connect(masterVolume);
                         modulatorGain.connect(carrierGain.gain);
                     } 
                     else
                     {
-                        osc1.connect(modulatorGain);
-                        osc2.connect(carrierGain);
+                        osc1v.connect(modulatorGain);
+                        osc2v.connect(carrierGain);
                         
                         carrierGain.connect(masterVolume);
                         modulatorGain.connect(carrierGain.gain);
@@ -120,14 +131,14 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
 
                     if (patch.mixer.carrierOsc === 0)
                     {
-                        osc2.connect(modulatorGain);
+                        osc2v.connect(modulatorGain);
                         modulatorGain.connect(osc1.detune);
-                        osc1.connect(masterVolume);
+                        osc1v.connect(masterVolume);
                     }
                     else {
-                        osc1.connect(modulatorGain);
+                        osc1v.connect(modulatorGain);
                         modulatorGain.connect(osc2.detune);
-                        osc2.connect(masterVolume);
+                        osc2v.connect(masterVolume);
                     }
                 }
                 break;
