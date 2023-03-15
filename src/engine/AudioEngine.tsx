@@ -41,7 +41,7 @@ const oscillatorMap: InternalOscillator[] = [];
  * @returns 
  */
 
-export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, patch: IPatch) {
+export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: AudioContext) {
 
     if (!event) return;
     log('-------------- HANDLE MIDI EVENT --------------')
@@ -124,8 +124,7 @@ export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, p
                         modulatorGain.connect(osc1.detune);
                         osc1.connect(masterVolume);
                     }
-                    else
-                    {
+                    else {
                         osc1.connect(modulatorGain);
                         modulatorGain.connect(osc2.detune);
                         osc2.connect(masterVolume);
@@ -144,7 +143,6 @@ export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, p
         osc2.start();
 
         oscillatorMap.push({ pitch: note, osc1, osc2 });
-        console.log(`-> oscillatorMap:`, oscillatorMap);
     }
     else if (event.message === "noteOff") 
     {
@@ -162,12 +160,11 @@ export function handleMidiEvent(event: IStatusMessage, audioCtx: AudioContext, p
 
             return oscillatorMap;
         });
-
     } 
     else if (event.message === "pitchBend")
-    {
         log(`-> pitchBend event @ bendLSB ${event.bendLSB} : bendMSB ${event.bendMSB}`);
-    }  
+    else
+        log(`-> Unhandled event: ${JSON.stringify(event)}`);
 }
 
 /**
