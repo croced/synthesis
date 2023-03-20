@@ -9,7 +9,7 @@ export const defaultPatch: IPatch = {
     oscillators: [
         {
             waveType: "sine",
-            detune: 0
+            detune: 0,
         },
         {
             waveType: "sine",

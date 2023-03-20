@@ -71,7 +71,19 @@ const Mixer: React.FC = () => {
         });
     }
 
-    const renderFmIndexSelect = () => {
+    const renderVol = () => {
+        return (
+            <div>
+                <label htmlFor="oscillatorMixSlider">Mix:</label>
+                <input type="range" name="oscillatorMixSlider" id="oscillatorMixSlider" min="0" max="1" step="0.01" value={patch.mixer.mix} onChange={handleVolMixChange}/>
+                <input type="number" name="oscillatorMix" id="oscillatorMix" min="0" max="1" step="0.1" value={patch.mixer.mix} onChange={handleVolMixChange}/>
+                <p>L: OSC.1</p>
+                <p>R: OSC.2</p>
+            </div>
+        );
+    };
+
+    const renderFM = () => {
         return (
             <div>
                 <label htmlFor="fmIndexSelect">Modulation:</label>
@@ -87,23 +99,16 @@ const Mixer: React.FC = () => {
 
             <label htmlFor="mixerTypes">Mix type:</label>
             <select name="mixerTypes" id="mixerTypes" onChange={handleMixerTypeChange}>
-                <option value="volume">Additive</option>
+                <option value="volume">Volume</option>
+                <option value="additive">Additive</option>
                 <option value="am">AM</option>
                 <option value="fm">FM</option>
             </select>
 
             {(patch.mixer.type === "am" || patch.mixer.type === "fm") && renderCarrierSelect()}
             <br />
-            {patch.mixer.type === "fm" && renderFmIndexSelect()}
-            {patch.mixer.type === "volume" && (
-                <div>
-                    <label htmlFor="oscillatorMixSlider">Mix:</label>
-                    <input type="range" name="oscillatorMixSlider" id="oscillatorMixSlider" min="0" max="1" step="0.01" value={patch.mixer.mix} onChange={handleVolMixChange}/>
-                    <input type="number" name="oscillatorMix" id="oscillatorMix" min="0" max="1" step="0.1" value={patch.mixer.mix} onChange={handleVolMixChange}/>
-                    <p>L: OSC.1</p>
-                    <p>R: OSC.2</p>
-                </div>
-            )}
+            {patch.mixer.type === "fm" && renderFM()}
+            {patch.mixer.type === "volume" && renderVol()}
         </div>
     );
 }

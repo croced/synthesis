@@ -10,7 +10,7 @@ interface IOscillator {
 }
 
 interface IMixer {
-    type: "volume" | "am" | "fm";
+    type: "volume" | "additive" | "am" | "fm";
     mix: number;
     carrierOsc?: 0 | 1;     // only used for AM & FM, 0 = osc1, 1 = osc2
     fmModIndex?: number;    // only used for FM
@@ -38,7 +38,6 @@ const oscillatorMap: InternalOscillator[] = [];
  * @param event IStatusMessage - the (parsed) MIDI event to handle
  * @param audioCtx - our WebAudioAPI AudioContext
  * @param patch - the patch object to play this event on
- * @returns 
  */
 
 export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: AudioContext) {
@@ -99,6 +98,14 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
 
                     osc1Gain.connect(masterVolume);
                     osc2Gain.connect(masterVolume);
+                }
+                break;
+            case "additive":
+                {
+                    osc1v.connect(masterVolume);
+                    osc2v.connect(masterVolume);
+                    
+                    masterVolume.gain.value = MAX_VOLUME / 2;
                 }
                 break;
             case "am":
@@ -172,11 +179,51 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
             return oscillatorMap;
         });
     } 
-    else if (event.message === "pitchBend")
+    else if (event.message === "pitchBend") {
         log(`-> pitchBend event @ bendLSB ${event.bendLSB} : bendMSB ${event.bendMSB}`);
+        
+        oscillatorMap.map((osc) => {
+            handlePitchBend(event, osc, audioCtx);
+            return oscillatorMap;
+        });
+    }
     else
         log(`-> Unhandled event: ${JSON.stringify(event)}`);
 }
+
+/**
+ * Function to handle a pitch bend event, adjusting the frequency of the 
+ * currently playing oscillator nodes accordingly.
+ * @param event PitchBend message - others will be ignored.
+ * @param osc Internal oscillator object containing the two oscillator nodes
+ * @param audioCtx Audio context
+ */
+
+const handlePitchBend = (event: IStatusMessage, osc: InternalOscillator, audioCtx: AudioContext) => {
+    if (!event.bendLSB || !event.bendMSB) return;
+
+    // combine the MSB and LSB values into a 14-bit value
+    var pitchBendValue = (event.bendMSB << 7) + event.bendLSB; 
+
+    // convert the 14-bit value to a range of -1 to 1
+    var normalizedPitchBendValue = (pitchBendValue - 8192) / 8192;
+
+    // convert the normalized pitch bend value to a frequency offset in semitones
+    var semitoneOffset = normalizedPitchBendValue * 2;
+
+    // calculate the frequency multiplier based on the semitone offset
+    var frequencyMultiplier = Math.pow(2, semitoneOffset / 12);
+
+    // calculate the frequency offset by subtracting 1 from the frequency multiplier and multiplying by the pitch
+    var frequencyOffset = (frequencyMultiplier - 1) * noteToFreq(osc.pitch);
+
+    const newPitch = noteToFreq(osc.pitch) + frequencyOffset;
+
+    osc.osc1.frequency.setValueAtTime(newPitch, audioCtx.currentTime);
+    osc.osc2.frequency.setValueAtTime(newPitch, audioCtx.currentTime);
+
+    log(`frequencyOffset: ${frequencyOffset}`);
+};
 
 /**
  * AudioEngine logging function, only logs if REACT_APP_EXTENSIVE_LOGGING is set.

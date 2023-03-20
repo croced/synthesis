@@ -52,7 +52,7 @@ const Oscillator: React.FC<Props> = ({ id }) => {
             </select>
             <br />
             <br />
-            <label htmlFor="oscillatorDetuneSlider">Detune:</label>
+            <label htmlFor="oscillatorDetuneSlider">Detune (cents):</label>
             <input type="range" name="oscillatorDetuneSlider" id="oscillatorDetuneSlider" min="-1200" max="1200" step="1" value={patch.oscillators[id].detune} onChange={(e) => handleOscDetuneChange(e, id as 0 | 1)}/>
             <input type="number" name="oscillatorDetune" id="oscillatorDetune" min="-1200" max="1200" value={patch.oscillators[id].detune} onChange={(e) => handleOscDetuneChange(e, id as 0 | 1)}/>
         </div>
