@@ -1,7 +1,7 @@
 import React from 'react';
 import { defaultPatch, PatchContext } from './context/PatchContext';
 import SynthView from './views/SynthView/SynthView';
-
+import './index.css';
 
 const App: React.FC = () => {
 

@@ -117,9 +117,14 @@ const SynthView: React.FC = () => {
          
 
     return (
-        <div className="App">
-            { defaultPatch.oscillators.map((_osc, i) => <Oscillator key={`osc-${i}`} id={i} />) }
+        <div className="grid gap-4 grid-cols-8 p-4">
+            <div>
+                { defaultPatch.oscillators.map((_osc, i) => <Oscillator key={`osc-${i}`} id={i} />) }
+            </div>
             <Mixer />
+            <div className="bg-red-200">
+                Filters
+            </div>
         </div>
     );
 };
