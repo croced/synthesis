@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
 import { PatchContext } from "../../../context/PatchContext";
+import Card from "./Card";
 
 const Mixer: React.FC = () => {
     const {patch, setPatch} = useContext(PatchContext);
@@ -47,12 +48,14 @@ const Mixer: React.FC = () => {
 
     const renderCarrierSelect = () => {
         return (
-            <div>
+            <div className="mt-2">
                 <label htmlFor="carrierSignal">Carrier Signal</label>
-                <select name="carrierSignal" id="carrierSignal" onChange={handleCarrierSignalChange}>
-                    <option value="0">OSC. 1</option>
-                    <option value="1">OSC. 2</option>
-                </select>
+                <div>
+                    <select name="carrierSignal" id="carrierSignal" onChange={handleCarrierSignalChange}>
+                        <option value="0">OSC. 1</option>
+                        <option value="1">OSC. 2</option>
+                    </select>
+                </div>
             </div>
         );
     };
@@ -73,43 +76,55 @@ const Mixer: React.FC = () => {
 
     const renderVol = () => {
         return (
-            <div>
-                <label htmlFor="oscillatorMixSlider">Mix:</label>
-                <input type="range" name="oscillatorMixSlider" id="oscillatorMixSlider" min="0" max="1" step="0.01" value={patch.mixer.mix} onChange={handleVolMixChange}/>
-                <input type="number" name="oscillatorMix" id="oscillatorMix" min="0" max="1" step="0.1" value={patch.mixer.mix} onChange={handleVolMixChange}/>
-                <p>L: OSC.1</p>
-                <p>R: OSC.2</p>
+            <div className="mt-2">
+                <label htmlFor="oscillatorMixSlider">Mix: { Math.ceil(patch.mixer.mix * 100) }%</label>
+
+                <div>
+                    <input type="range" className="w-full" name="oscillatorMixSlider" id="oscillatorMixSlider" min="0" max="1" step="0.01" value={patch.mixer.mix} onChange={handleVolMixChange}/>
+                    <div>
+                        <p className="float-left leading-3">OSC.1</p>
+                        <p className="float-right leading-3">OSC.2</p>
+                    </div>
+                </div>
             </div>
         );
     };
 
     const renderFM = () => {
         return (
-            <div>
+            <div className="mt-2">
                 <label htmlFor="fmIndexSelect">Modulation:</label>
-                <input type="range" name="fmIndexSelectSlider" id="fmIndexSelectSlider" min="0" max="100" step="1" value={patch.mixer.fmModIndex} onChange={handleFmIndexChange}/>
-                <input type="number" name="fmIndexSelect" id="fmIndexSelect" min="0" max="100" step="1" value={patch.mixer.fmModIndex} onChange={handleVolMixChange}/>
+                <div className="flex">
+                    <div className="w-3/4">
+                        <input type="range" name="fmIndexSelectSlider" id="fmIndexSelectSlider" min="0" max="100" step="1" value={patch.mixer.fmModIndex} onChange={handleFmIndexChange}/>
+                    </div>
+                    <input type="number" name="fmIndexSelect" id="fmIndexSelect" min="0" max="100" step="1" value={patch.mixer.fmModIndex} onChange={handleFmIndexChange}/>
+                </div>
+              
             </div>
         );
     };
 
     return (
-        <div className="bg-yellow-200">
-            <h1>Mixer</h1>
+        <Card title="MIXER">
+            <div>
+                <label htmlFor="mixerTypes">Mix type:</label>
+                <div>
+                    <select name="mixerTypes" id="mixerTypes" onChange={handleMixerTypeChange}>
+                        <option value="volume">Volume</option>
+                        <option value="additive">Additive</option>
+                        <option value="am">AM</option>
+                        <option value="fm">FM</option>
+                    </select>
+                </div>
+            </div>
 
-            <label htmlFor="mixerTypes">Mix type:</label>
-            <select name="mixerTypes" id="mixerTypes" onChange={handleMixerTypeChange}>
-                <option value="volume">Volume</option>
-                <option value="additive">Additive</option>
-                <option value="am">AM</option>
-                <option value="fm">FM</option>
-            </select>
-
-            {(patch.mixer.type === "am" || patch.mixer.type === "fm") && renderCarrierSelect()}
-            <br />
-            {patch.mixer.type === "fm" && renderFM()}
-            {patch.mixer.type === "volume" && renderVol()}
-        </div>
+            <div>
+                {(patch.mixer.type === "am" || patch.mixer.type === "fm") && renderCarrierSelect()}
+                {patch.mixer.type === "fm" && renderFM()}
+                {patch.mixer.type === "volume" && renderVol()}
+            </div>
+        </Card>
     );
 }
 

@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { defaultPatch, PatchContext } from '../../context/PatchContext';
 import { handleMidiEvent } from '../../engine/AudioEngine';
 import { GetMIDIMessage, IStatusMessage } from '../../engine/MIDIEngine';
+import Card from './components/Card';
 import Mixer from './components/Mixer';
 import Oscillator from './components/Oscillator';
 
@@ -108,23 +109,39 @@ const SynthView: React.FC = () => {
         else log(midiMessage)
     }
 
-    if (!contextStarted) return (
-        <div className="App">
-            <p>You must manually start audio context before sound is produced!</p>
-            <button onClick={startAudioContext}>Start</button>
-        </div>  
-    );
+
          
 
     return (
-        <div className="grid gap-4 grid-cols-8 p-4">
-            <div>
-                { defaultPatch.oscillators.map((_osc, i) => <Oscillator key={`osc-${i}`} id={i} />) }
+        <div className="p-4">
+            <h1 className="text-2xl font-bold">Synth View</h1>
+            <div className="mt-2 grid gap-x-12 grid-cols-6">
+
+                {/* Audio Context warning */}
+                { !contextStarted && (
+                    <div className="p-4 mb-2 bg-amber-200 rounded-md">
+                        <p>You must manually start audio context before sound is produced!</p>
+                        <br />
+                        <button className="bg-amber-400 px-4 rounded-md" onClick={startAudioContext}>Start</button>
+                    </div>  
+                )}
+
+                {/* Oscillators */}
+                <div>
+                    { defaultPatch.oscillators.map((_osc, i) => <Oscillator key={`osc-${i}`} id={i} />) }
+                </div>
+
+                {/* Mixer */}
+                <Mixer />
+
+                {/* Filters */}
+                <div>
+                    <Card title="FILTER">
+                        (Filters go here)
+                    </Card>
+                </div>
             </div>
-            <Mixer />
-            <div className="bg-red-200">
-                Filters
-            </div>
+
         </div>
     );
 };
