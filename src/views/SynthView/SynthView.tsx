@@ -5,6 +5,9 @@ import { GetMIDIMessage, IStatusMessage } from '../../engine/MIDIEngine';
 import Card from './components/Card';
 import Mixer from './components/Mixer';
 import Oscillator from './components/Oscillator';
+import clsx from 'clsx';
+import { AuthContext } from '../../reducers/AuthReducer';
+import { useNavigate } from "react-router-dom";
 
 const SynthView: React.FC = () => {
 
@@ -12,7 +15,20 @@ const SynthView: React.FC = () => {
     const [midiAccess, setMidiAccess] = useState<WebMidi.MIDIAccess | null | undefined>(null);
     const [contextStarted, setContextStarted] = useState(false);
 
+    const { authState, authDispatch } = useContext(AuthContext);
     const { patch } = useContext(PatchContext);
+
+    let navigate = useNavigate();
+
+    useEffect(() => {
+        if (authState.token === null)
+            navigate('/login');
+    }, [authState]);
+
+    const handleLogout = () => {
+        authDispatch({ type: 'LOGOUT' });
+        navigate('/login');
+    };
 
     /**
      * * Initialise the AudioContext on mount, and close it on unmount.
@@ -28,7 +44,6 @@ const SynthView: React.FC = () => {
      */
 
     useEffect(() => {
-
         audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
 
         if (navigator.requestMIDIAccess) {
@@ -109,20 +124,20 @@ const SynthView: React.FC = () => {
         else log(midiMessage)
     }
 
-
-         
-
     return (
         <div className="p-4">
             <h1 className="text-2xl font-bold">Synth View</h1>
-            <div className="mt-2 grid gap-x-12 grid-cols-6">
+            <div>
+                <button onClick={handleLogout}>Logout</button>
+            </div>
+            <div className={clsx("mt-2 grid gap-x-12 grid-cols-6", {"bg-amber-200 rounded-xl py-4": !contextStarted})}>
 
                 {/* Audio Context warning */}
                 { !contextStarted && (
-                    <div className="p-4 mb-2 bg-amber-200 rounded-md">
+                    <div className="p-4 mb-2">
                         <p>You must manually start audio context before sound is produced!</p>
                         <br />
-                        <button className="bg-amber-400 px-4 rounded-md" onClick={startAudioContext}>Start</button>
+                        <button className="bg-amber-400 px-4 rounded-md w-full" onClick={startAudioContext}>Start</button>
                     </div>  
                 )}
 

@@ -133,20 +133,44 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
                 break;
             case "fm":
                 {
-                    const modulatorGain = audioCtx.createGain();
-                    modulatorGain.gain.value = patch.mixer.fmModIndex || 50;
+                    // const modulatorGain = audioCtx.createGain();
+                    // modulatorGain.gain.value = patch.mixer.fmModIndex || 50;
 
-                    if (patch.mixer.carrierOsc === 0)
+                    // if (patch.mixer.carrierOsc === 0)
+                    // {
+                    //     osc2v.connect(modulatorGain);
+                    //     modulatorGain.connect(osc1.detune);
+                    //     osc1v.connect(masterVolume);
+                    // }
+                    // else {
+                    //     osc1v.connect(modulatorGain);
+                    //     modulatorGain.connect(osc2.detune);
+                    //     osc2v.connect(masterVolume);
+                    // }
+
+                    const normalizedModIndex = (patch.mixer.fmModIndex || 50) / 100;
+                    const modDepth = audioCtx.createGain();
+                    
+                    if (patch.mixer.carrierOsc === 0) 
                     {
-                        osc2v.connect(modulatorGain);
-                        modulatorGain.connect(osc1.detune);
+                        modDepth.gain.value = normalizedModIndex * osc1.frequency.value;
+                        
+                        osc2v.connect(modDepth);
+                        modDepth.connect(osc1.frequency);
+
                         osc1v.connect(masterVolume);
-                    }
-                    else {
-                        osc1v.connect(modulatorGain);
-                        modulatorGain.connect(osc2.detune);
+                    } 
+                    else
+                    {
+                        modDepth.gain.value = normalizedModIndex * osc2.frequency.value;
+
+                        osc1v.connect(modDepth);
+                        modDepth.connect(osc2.frequency);
+
                         osc2v.connect(masterVolume);
                     }
+                    
+                    masterVolume.gain.value = MAX_VOLUME / 2;
                 }
                 break;
             default:
