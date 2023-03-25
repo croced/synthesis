@@ -12,23 +12,20 @@ import { useNavigate } from "react-router-dom";
 const SynthView: React.FC = () => {
 
     const audioContext = useRef<AudioContext | null>(null);
+
     const [midiAccess, setMidiAccess] = useState<WebMidi.MIDIAccess | null | undefined>(null);
     const [contextStarted, setContextStarted] = useState(false);
 
-    const { authState, authDispatch } = useContext(AuthContext);
+    const { authState, user } = useContext(AuthContext);
     const { patch } = useContext(PatchContext);
 
     let navigate = useNavigate();
 
+    // if we don't have a token, redirect to login page
     useEffect(() => {
         if (authState.token === null)
             navigate('/login');
-    }, [authState]);
-
-    const handleLogout = () => {
-        authDispatch({ type: 'LOGOUT' });
-        navigate('/login');
-    };
+    }, [authState, navigate]);
 
     /**
      * * Initialise the AudioContext on mount, and close it on unmount.
@@ -47,21 +44,21 @@ const SynthView: React.FC = () => {
         audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
 
         if (navigator.requestMIDIAccess) {
-        console.log('Web MIDI API is supported');
+            console.log('Web MIDI API is supported');
 
-        audioContext.current.suspend();
+            audioContext.current.suspend();
 
-        navigator.requestMIDIAccess({sysex: true})
-        .then(onMIDISuccess, onMIDIFailure);
+            navigator.requestMIDIAccess({sysex: true})
+                .then(onMIDISuccess, onMIDIFailure);
 
         } else {
             console.log('Web MIDI API is not supported');
         }
 
         return () => {
-        log("Closing AudioContext...");
-        if (audioContext.current)
-            audioContext.current.close();
+            log("Closing AudioContext...");
+            if (audioContext.current)
+                audioContext.current.close();
         };
     }, []);
 
@@ -81,7 +78,7 @@ const SynthView: React.FC = () => {
         if (!midiAccess)
             return;
 
-        function inputListener(message: WebMidi.MIDIMessageEvent | null) {
+        const inputListener = (message: WebMidi.MIDIMessageEvent | null) => {
             if (!message || !message.data) return;
             handleMessage(message);
         } 
@@ -100,14 +97,11 @@ const SynthView: React.FC = () => {
         }
     }, [midiAccess, patch]); // eslint-disable-line react-hooks/exhaustive-deps
     
-    const onMIDISuccess = (_midiAccess: WebMidi.MIDIAccess) => {
+    const onMIDISuccess = (_midiAccess: WebMidi.MIDIAccess) =>
         setMidiAccess(_midiAccess);
-    }
 
-    const onMIDIFailure = (event: any) => {
+    const onMIDIFailure = (_event: any) =>
         console.log('Could not access your MIDI devices.');
-        console.log(event);
-    }
 
     /**
      * Handle raw MIDI messages by converting them to a more
@@ -125,39 +119,41 @@ const SynthView: React.FC = () => {
     }
 
     return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold">Synth View</h1>
-            <div>
-                <button onClick={handleLogout}>Logout</button>
-            </div>
-            <div className={clsx("mt-2 grid gap-x-12 grid-cols-6", {"bg-amber-200 rounded-xl py-4": !contextStarted})}>
-
-                {/* Audio Context warning */}
-                { !contextStarted && (
-                    <div className="p-4 mb-2">
-                        <p>You must manually start audio context before sound is produced!</p>
-                        <br />
-                        <button className="bg-amber-400 px-4 rounded-md w-full" onClick={startAudioContext}>Start</button>
-                    </div>  
-                )}
-
-                {/* Oscillators */}
+        <>
+            <div className="p-4">
+                <h1 className="text-2xl font-bold">Synth View</h1>
                 <div>
-                    { defaultPatch.oscillators.map((_osc, i) => <Oscillator key={`osc-${i}`} id={i} />) }
+                    <p>Hello user: {user}</p>
+                </div>
+                <div className={clsx("mt-2 grid gap-x-12 grid-cols-6", {"bg-amber-200 rounded-xl py-4": !contextStarted})}>
+
+                    {/* Audio Context warning */}
+                    { !contextStarted && (
+                        <div className="p-4 mb-2">
+                            <p>You must manually start audio context before sound is produced!</p>
+                            <br />
+                            <button className="bg-amber-400 px-4 rounded-md w-full" onClick={startAudioContext}>Start</button>
+                        </div>  
+                    )}
+
+                    {/* Oscillators */}
+                    <div>
+                        { defaultPatch.oscillators.map((_osc, i) => <Oscillator key={`osc-${i}`} id={i} />) }
+                    </div>
+
+                    {/* Mixer */}
+                    <Mixer />
+
+                    {/* Filters */}
+                    <div>
+                        <Card title="FILTER">
+                            (Filters go here)
+                        </Card>
+                    </div>
                 </div>
 
-                {/* Mixer */}
-                <Mixer />
-
-                {/* Filters */}
-                <div>
-                    <Card title="FILTER">
-                        (Filters go here)
-                    </Card>
-                </div>
             </div>
-
-        </div>
+        </>
     );
 };
 

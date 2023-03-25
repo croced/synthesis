@@ -1,24 +1,11 @@
 import React from 'react';
 import './index.css';
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { defaultPatch, PatchContext } from './context/PatchContext';
 import { AuthProvider } from './reducers/AuthReducer';
 import AuthView from './views/AuthView';
 import SynthView from './views/SynthView/SynthView';
-
-const router = createBrowserRouter([
-    {
-      path: "/",
-      element: <SynthView />,
-    },
-    {
-      path: "/login",
-      element: <AuthView />,
-    },
-]);
+import Navbar from './components/Navbar';
 
 const App: React.FC = () => {
 
@@ -28,7 +15,13 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <PatchContext.Provider value={patchVal}>
-        <RouterProvider router={router} />
+        <Router>
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<SynthView />} />
+            <Route path="/login" element={<AuthView />} />
+          </Routes>
+        </Router>
       </PatchContext.Provider>
     </AuthProvider>
   );

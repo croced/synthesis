@@ -16,7 +16,7 @@ const AuthView = () => {
     useEffect(() => {
         if (authState.token !== null)
             navigate('/');
-    }, [authState]);
+    }, [authState, navigate]);
 
     const handleLoginSubmit = async (e: any) => {
         e.preventDefault();
@@ -81,7 +81,8 @@ const AuthView = () => {
     const renderLoginForm = () => {
         return (
             <div>
-                <h1 className="text-3xl font-bold mb-4">synThesis - Login</h1>
+                <h1 className="text-3xl font-bold mb-4 w-full flex justify-center">synThesis</h1>
+                <h1 className="text-2xl font-bold mb-4 w-full flex justify-center">Login to an existing account</h1>
 
                 <form onSubmit={handleLoginSubmit}>
                     {/* form */}
@@ -102,7 +103,7 @@ const AuthView = () => {
 
                     {/* register */}
                     <hr className="my-4" />
-                    <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md w-full" onClick={() => { setShowRegister(true) }}>Register</button>
+                    <p className="hover:text-gray-600 text-gray-400 rounded-md hover:cursor-pointer w-full flex justify-center" onClick={() => { setShowRegister(true) }}>Or register an account</p>
                 </form>
             </div>
         )
@@ -111,7 +112,8 @@ const AuthView = () => {
     const renderRegisterForm = () => {
         return (
             <div>
-                <h1 className="text-3xl font-bold mb-4">synThesis - Register</h1>
+                <h1 className="text-3xl font-bold mb-4 w-full flex justify-center">synThesis</h1>
+                <h1 className="text-2xl font-bold mb-4 w-full flex justify-center">Register an account</h1>
                 <form onSubmit={handleRegisterSubmit}>
                     {/* form */}
                     <div className="mb-4">
@@ -136,7 +138,7 @@ const AuthView = () => {
 
                     {/* login */}
                     <hr className="my-4" />
-                    <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md w-full" onClick={() => { setShowRegister(false) }}>Login</button>
+                    <p className="hover:text-gray-600 text-gray-400 rounded-md hover:cursor-pointer w-full flex justify-center" onClick={() => { setShowRegister(false) }}>Or login to an existing account</p>
                 </form>
             </div>
         );
