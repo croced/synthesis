@@ -6,6 +6,9 @@ import { IPatch } from '../engine/AudioEngine';
  */
 
 export const defaultPatch: IPatch = {
+    meta: {
+        version: 1,
+    },
     oscillators: [
         {
             waveType: "sine",

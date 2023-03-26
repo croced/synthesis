@@ -4,6 +4,11 @@ import { noteToFreq } from "../util/util";
 const MAX_VOLUME = 0.5 as const;
 
 // External facing interfaces (e.g. can be saved as JSON files)
+
+interface IMetaData {
+    version: number;
+}
+
 interface IOscillator {
     waveType: "sine" | "square" | "sawtooth" | "triangle";
     detune?: number;
@@ -17,6 +22,7 @@ interface IMixer {
 }
 
 export interface IPatch {
+    meta: IMetaData;
     oscillators: IOscillator[];
     mixer: IMixer;
 }
@@ -101,12 +107,10 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
                 }
                 break;
             case "additive":
-                {
                     osc1v.connect(masterVolume);
                     osc2v.connect(masterVolume);
                     
                     masterVolume.gain.value = MAX_VOLUME / 2;
-                }
                 break;
             case "am":
                 {            

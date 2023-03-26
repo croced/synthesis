@@ -17,7 +17,7 @@ const SynthView: React.FC = () => {
     const [contextStarted, setContextStarted] = useState(false);
 
     const { authState, user } = useContext(AuthContext);
-    const { patch } = useContext(PatchContext);
+    const { patch, setPatch } = useContext(PatchContext);
 
     let navigate = useNavigate();
 
@@ -118,12 +118,53 @@ const SynthView: React.FC = () => {
         else log(midiMessage)
     }
 
+    /**
+     * Download patch as JSON file.
+     */
+
+    const exportPatch = () => {
+        const jsonStr = JSON.stringify(patch);
+        const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(jsonStr)}`;
+        const link = document.createElement('a');
+
+        link.setAttribute('href', dataUri);
+        link.setAttribute('download', 'my-patch.json');
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    const importPatch = (e: any) => {
+        const file = e.target.files[0];
+        if (!file || !e.target) return;
+    
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+          try {
+            const loadedPatch = JSON.parse(e.target!.result as string);
+            if (!loadedPatch.meta || !loadedPatch.oscillators || !loadedPatch.mixer)
+                throw new Error('Invalid patch file!');
+
+            setPatch(loadedPatch);
+          } catch (error) {
+            console.error('Invalid JSON file!');
+          }
+        };
+
+        reader.readAsText(file);
+      };
+
     return (
         <>
             <div className="p-4">
                 <h1 className="text-2xl font-bold">Synth View</h1>
                 <div>
                     <p>Hello user: {user}</p>
+                    <button onClick={exportPatch}>Download patch</button>
+                    <br />
+                    <input type="file" accept=".json" onChange={importPatch} />
                 </div>
                 <div className={clsx("mt-2 grid gap-x-12 grid-cols-6", {"bg-amber-200 rounded-xl py-4": !contextStarted})}>
 

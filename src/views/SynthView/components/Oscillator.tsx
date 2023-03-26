@@ -17,8 +17,8 @@ const Oscillator: React.FC<Props> = ({ id }) => {
         oscillators[osc] = oscillator;
 
         setPatch({
-        ...patch,
-        oscillators
+            ...patch,
+            oscillators
         });
     };
 
