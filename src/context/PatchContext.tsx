@@ -29,5 +29,6 @@ export const defaultPatch: IPatch = {
 
 export const PatchContext = createContext({
     patch: defaultPatch,
-    setPatch: (patch: IPatch) => {}
+    setPatch: (patch: IPatch) => {},
+    defaultPatch
 });

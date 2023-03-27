@@ -121,8 +121,8 @@ const SynthView: React.FC = () => {
 
     return (
         <>
-            <div className="flex flex-grow">                
-                <div className={clsx("flex gap-x-12 w-full", {"bg-amber-200 rounded-xl py-4": !contextStarted})}>
+            <div className="flex flex-row flex-grow">                
+                <div className={clsx("flex w-full", {"bg-amber-200 rounded-xl py-4": !contextStarted})}>
 
                     {/* Audio Context warning & Sidebar */}
                     { 
@@ -135,17 +135,19 @@ const SynthView: React.FC = () => {
                         ) : <Sidebar />
                     }
 
-                    <div className="flex gap-12 mt-2">
+                    <div className="flex flex-row gap-8 p-8 w-full">
                         {/* Oscillators */}
-                        <div>
+                        <div className='w-full'>
                             { defaultPatch.oscillators.map((_osc, i) => <Oscillator key={`osc-${i}`} id={i} />) }
                         </div>
 
                         {/* Mixer */}
-                        <Mixer />
+                        <div className='w-full'>
+                            <Mixer />
+                        </div>
 
                         {/* Filters */}
-                        <div>
+                        <div className='w-full'>
                             <Card title="FILTER">
                                 (Filters go here)
                             </Card>

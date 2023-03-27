@@ -7,7 +7,7 @@ const Mixer: React.FC = () => {
 
     const handleVolMixChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         let mixValue: number = parseFloat(event.target.value);
-        if (isNaN(mixValue)) return;
+        if (isNaN(mixValue)) mixValue = 0.5;
 
         if (mixValue > 1)
             mixValue = 1;
@@ -25,7 +25,7 @@ const Mixer: React.FC = () => {
 
     const handleMixerTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         let mixer = {...patch.mixer};
-        mixer.type = event.target.value as "volume" | "am" | "fm";
+        mixer.type = event.target.value as "volume" | "additive" | "am" | "fm";
 
         setPatch({
             ...patch,
@@ -81,7 +81,7 @@ const Mixer: React.FC = () => {
 
                 <div>
                     <input type="range" className="w-full" name="oscillatorMixSlider" id="oscillatorMixSlider" min="0" max="1" step="0.01" value={patch.mixer.mix} onChange={handleVolMixChange}/>
-                    <div>
+                    <div className="mb-4">
                         <p className="float-left leading-3">OSC.1</p>
                         <p className="float-right leading-3">OSC.2</p>
                     </div>
@@ -110,7 +110,7 @@ const Mixer: React.FC = () => {
             <div>
                 <label htmlFor="mixerTypes">Mix type:</label>
                 <div>
-                    <select name="mixerTypes" id="mixerTypes" onChange={handleMixerTypeChange}>
+                    <select name="mixerTypes" id="mixerTypes" onChange={handleMixerTypeChange} value={patch.mixer.type}>
                         <option value="volume">Volume</option>
                         <option value="additive">Additive</option>
                         <option value="am">AM</option>

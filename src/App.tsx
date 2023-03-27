@@ -10,7 +10,7 @@ import Navbar from './components/Navbar';
 const App: React.FC = () => {
 
   const [patch, setPatch] = React.useState(defaultPatch);
-  const patchVal = { patch, setPatch };
+  const patchVal = { patch, setPatch, defaultPatch };
 
   return (
     <AuthProvider>
