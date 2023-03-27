@@ -71,7 +71,7 @@ const Sidebar: React.FC = () => {
     const handleTestPatchClick = () => {
         setPatchBankIndex(0);
         setCurrentPatchName("test-patch");
-        setPatch({"meta":{"version":1},"oscillators":[{"waveType":"sine","detune":0},{"waveType":"square","detune":-498}],"mixer":{"type":"additive","mix":0.5,"carrierOsc":0,"fmModIndex":50}});
+        setPatch({"meta":{"version":1},"oscillators":[{"waveType":"sine","detune":0},{"waveType":"square","detune":-498, "octave": -2}],"mixer":{"type":"additive","mix":0.5,"carrierOsc":0,"fmModIndex":50}});
     }
 
     const handlePatchReset = () => {

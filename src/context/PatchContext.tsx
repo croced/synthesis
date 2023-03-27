@@ -13,10 +13,12 @@ export const defaultPatch: IPatch = {
         {
             waveType: "sine",
             detune: 0,
+            octave: 0
         },
         {
             waveType: "sine",
-            detune: 0
+            detune: 0,
+            octave: 0,
         },
     ],
     mixer: {

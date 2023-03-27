@@ -12,6 +12,7 @@ interface IMetaData {
 interface IOscillator {
     waveType: "sine" | "square" | "sawtooth" | "triangle";
     detune?: number;
+    octave?: number;
 }
 
 interface IMixer {
@@ -54,6 +55,8 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
     const note = event.pitch! || 0;
     const noteFreq = noteToFreq(note);
 
+    // const osc1AdjustedOctave = note - (patch.oscillators[0].octave || 0 * 12);
+
     if (event.message === "noteOn")
     {
         log(`-> noteon detected: ${note}`);
@@ -68,11 +71,11 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
         const osc2 = audioCtx.createOscillator();
 
         osc1.type = patch.oscillators[0].waveType;
-        osc1.frequency.value = noteFreq;
+        osc1.frequency.value = noteToFreq(note + ((patch.oscillators[0].octave || 0) * 12));
         osc1.detune.value = patch.oscillators[0].detune || 0;
 
         osc2.type = patch.oscillators[1].waveType;
-        osc2.frequency.value =noteFreq;
+        osc2.frequency.value = noteToFreq(note + ((patch.oscillators[1].octave || 0) * 12));
         osc2.detune.value = patch.oscillators[1].detune || 0;
 
         // velocity gain node
