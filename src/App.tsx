@@ -16,11 +16,13 @@ const App: React.FC = () => {
     <AuthProvider>
       <PatchContext.Provider value={patchVal}>
         <Router>
-          <Navbar />
-          <Routes>
-            <Route path="/" element={<SynthView />} />
-            <Route path="/login" element={<AuthView />} />
-          </Routes>
+          <div className="flex flex-col h-screen">
+            <Navbar />
+            <Routes>
+              <Route path="/" element={<SynthView />} />
+              <Route path="/login" element={<AuthView />} />
+            </Routes>
+          </div>
         </Router>
       </PatchContext.Provider>
     </AuthProvider>

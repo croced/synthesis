@@ -45,7 +45,7 @@ const Oscillator: React.FC<Props> = ({ id }) => {
     return (
         <Card title={`OSC. ${id + 1}`}>
             <div className="flex">
-                <div className="w-3/4">
+                <div className="w-3/4 mr-4">
                     <label htmlFor="oscillatorTypes">Type:</label>
                     <div className="flex">
                         <select name="oscillatorTypes" id="oscillatorTypes" onChange={(e) => handleWaveTypeChange(e, id as 0 | 1)}>

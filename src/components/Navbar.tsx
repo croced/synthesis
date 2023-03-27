@@ -46,12 +46,12 @@ const Navbar: React.FC = () => {
                 >
                     My Account
                 </Link>
-                <a
-                className="hover:underline hover:cursor-pointer px-3 py-2 rounded-md text-sm font-medium"
-                onClick={handleLogout}
+                <button
+                    className="hover:underline px-3 py-2 rounded-md text-sm font-medium"
+                    onClick={handleLogout}
                 >
                 Logout
-                </a>
+                </button>
                 </>
             )}
             </div>

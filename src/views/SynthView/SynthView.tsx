@@ -8,6 +8,7 @@ import Oscillator from './components/Oscillator';
 import clsx from 'clsx';
 import { AuthContext } from '../../reducers/AuthReducer';
 import { useNavigate } from "react-router-dom";
+import Sidebar from './Sidebar';
 
 const SynthView: React.FC = () => {
 
@@ -118,78 +119,37 @@ const SynthView: React.FC = () => {
         else log(midiMessage)
     }
 
-    /**
-     * Download patch as JSON file.
-     */
-
-    const exportPatch = () => {
-        const jsonStr = JSON.stringify(patch);
-        const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(jsonStr)}`;
-        const link = document.createElement('a');
-
-        link.setAttribute('href', dataUri);
-        link.setAttribute('download', 'my-patch.json');
-
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    const importPatch = (e: any) => {
-        const file = e.target.files[0];
-        if (!file || !e.target) return;
-    
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-          try {
-            const loadedPatch = JSON.parse(e.target!.result as string);
-            if (!loadedPatch.meta || !loadedPatch.oscillators || !loadedPatch.mixer)
-                throw new Error('Invalid patch file!');
-
-            setPatch(loadedPatch);
-          } catch (error) {
-            console.error('Invalid JSON file!');
-          }
-        };
-
-        reader.readAsText(file);
-      };
-
     return (
         <>
-            <div className="p-4">
-                <h1 className="text-2xl font-bold">Synth View</h1>
-                <div>
-                    <p>Hello user: {user}</p>
-                    <button onClick={exportPatch}>Download patch</button>
-                    <br />
-                    <input type="file" accept=".json" onChange={importPatch} />
-                </div>
-                <div className={clsx("mt-2 grid gap-x-12 grid-cols-6", {"bg-amber-200 rounded-xl py-4": !contextStarted})}>
+            <div className="flex flex-grow">                
+                <div className={clsx("flex gap-x-12 w-full", {"bg-amber-200 rounded-xl py-4": !contextStarted})}>
 
-                    {/* Audio Context warning */}
-                    { !contextStarted && (
-                        <div className="p-4 mb-2">
-                            <p>You must manually start audio context before sound is produced!</p>
-                            <br />
-                            <button className="bg-amber-400 px-4 rounded-md w-full" onClick={startAudioContext}>Start</button>
-                        </div>  
-                    )}
+                    {/* Audio Context warning & Sidebar */}
+                    { 
+                        !contextStarted ? (
+                            <div className="p-4 mb-2">
+                                <p>You must manually start audio context before sound is produced!</p>
+                                <br />
+                                <button className="bg-amber-400 px-4 rounded-md w-full" onClick={startAudioContext}>Start</button>
+                            </div>  
+                        ) : <Sidebar />
+                    }
 
-                    {/* Oscillators */}
-                    <div>
-                        { defaultPatch.oscillators.map((_osc, i) => <Oscillator key={`osc-${i}`} id={i} />) }
-                    </div>
+                    <div className="flex gap-12 mt-2">
+                        {/* Oscillators */}
+                        <div>
+                            { defaultPatch.oscillators.map((_osc, i) => <Oscillator key={`osc-${i}`} id={i} />) }
+                        </div>
 
-                    {/* Mixer */}
-                    <Mixer />
+                        {/* Mixer */}
+                        <Mixer />
 
-                    {/* Filters */}
-                    <div>
-                        <Card title="FILTER">
-                            (Filters go here)
-                        </Card>
+                        {/* Filters */}
+                        <div>
+                            <Card title="FILTER">
+                                (Filters go here)
+                            </Card>
+                        </div>
                     </div>
                 </div>
 
