@@ -29,24 +29,30 @@ const PatchBrowser: React.FC = () => {
     /**
      * Fetch all patches from the database!
      */
+
+    const fetchAllPatches = async () => {
+        try {
+            const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/getPatches`);
+            if (res.data.patches)
+            {
+                setSearchResults(res.data.patches);
+            } else console.log('No patches found!');
+        } 
+        catch (err: any) {
+            console.log("Something went wrong!");
+        }
+    };
     
     useEffect(() => {
         (async () => {
-
-            try {
-                const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/getPatches`);
-                if (res.data.patches)
-                {
-                    setSearchResults(res.data.patches);
-                } else console.log('No patches found!');
-            } 
-            catch (err: any) {
-                console.log("Something went wrong!");
-            }
+            await fetchAllPatches();
         })();
     }, []);
 
     const onSearchChange = (searchText: string) => {
+
+        if (searchText.length === 0) fetchAllPatches();
+
         if (searchText.length < 3){
             setSearchText("");
             return;
