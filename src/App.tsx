@@ -6,6 +6,7 @@ import { AuthProvider } from './reducers/AuthReducer';
 import AuthView from './views/AuthView';
 import SynthView from './views/SynthView/SynthView';
 import Navbar from './components/Navbar';
+import PatchBrowser from './views/PatchBrowser/PatchBrowser';
 
 const App: React.FC = () => {
 
@@ -21,8 +22,9 @@ const App: React.FC = () => {
           <div className="flex flex-col h-screen">
             <Navbar />
             <Routes>
-              <Route path="/" element={<SynthView />} />
               <Route path="/login" element={<AuthView />} />
+              <Route path="/" element={<SynthView />} />
+              <Route path="/patch-browser" element={<PatchBrowser/>} />
             </Routes>
           </div>
         </Router>
