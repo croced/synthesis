@@ -17,8 +17,8 @@ const SynthView: React.FC = () => {
     const [midiAccess, setMidiAccess] = useState<WebMidi.MIDIAccess | null | undefined>(null);
     const [contextStarted, setContextStarted] = useState(false);
 
-    const { authState, user } = useContext(AuthContext);
-    const { patch, setPatch } = useContext(PatchContext);
+    const { authState } = useContext(AuthContext);
+    const { patch } = useContext(PatchContext);
 
     let navigate = useNavigate();
 

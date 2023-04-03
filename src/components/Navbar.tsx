@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
         <nav className="bg-gray-200 py-3 border-b-2 border-b-gray-500">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 flex justify-between">
             <div className="flex items-center">
-            <span className="text-xl font-bold">synThesis</span>
+            <span className="text-xl font-bold">synThesis (prototype)</span>
             </div>
             <div className="flex items-center">
             <Link

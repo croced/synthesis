@@ -8,6 +8,8 @@ import { IPatch } from '../engine/AudioEngine';
 export const defaultPatch: IPatch = {
     meta: {
         version: 1,
+        author: "default",
+        name: "untitled-patch"
     },
     oscillators: [
         {

@@ -7,6 +7,8 @@ const MAX_VOLUME = 0.5 as const;
 
 interface IMetaData {
     version: number;
+    author: string;
+    name: string;
 }
 
 interface IOscillator {
@@ -60,7 +62,6 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
     if (event.message === "noteOn")
     {
         log(`-> noteon detected: ${note}`);
-        log(`-> mixer: ${JSON.stringify(patch.mixer)})}`);
 
         // master volume gain node
         const masterVolume = audioCtx.createGain();
@@ -195,7 +196,7 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
     }
     else if (event.message === "noteOff") 
     {
-        log(`-> noteof event detected for note: ${note}`);
+        log(`-> noteoff event detected for note: ${note}`);
 
         oscillatorMap.map((osc, index) => {
             if (osc.pitch === note) {
