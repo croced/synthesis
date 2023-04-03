@@ -1,6 +1,8 @@
 import { createContext } from 'react';
 import { IPatch } from '../engine/AudioEngine';
 
+export type PatchModel = IPatch & {_id: any};
+
 /**
  * The default patch to use when the app is loaded.
  */
@@ -32,7 +34,9 @@ export const defaultPatch: IPatch = {
   };
 
 export const PatchContext = createContext({
+    defaultPatch,
     patch: defaultPatch,
     setPatch: (patch: IPatch) => {},
-    defaultPatch
+    patchBank: [] as PatchModel[],
+    setPatchBank: (patchBank: PatchModel[]) => {},
 });

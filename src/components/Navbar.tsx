@@ -1,9 +1,11 @@
 import { useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { PatchContext } from '../context/PatchContext';
 import { AuthContext } from '../reducers/AuthReducer';
 
 const Navbar: React.FC = () => {
   const { authState, authDispatch } = useContext(AuthContext);
+  const { setPatch, defaultPatch, setPatchBank } = useContext(PatchContext);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -11,6 +13,11 @@ const Navbar: React.FC = () => {
     // logout handling
     const handleLogout = () => {
         authDispatch({ type: 'LOGOUT' });
+
+        // reset patch
+        setPatch(defaultPatch);
+        setPatchBank([]);
+
         navigate('/login');
     };
 

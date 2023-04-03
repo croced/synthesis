@@ -7,11 +7,9 @@ import { PatchContext } from '../../context/PatchContext';
 import { IPatch } from '../../engine/AudioEngine';
 import { AuthContext } from '../../reducers/AuthReducer';
 
-type PatchModel = IPatch & {_id: any};
-
 const Sidebar: React.FC = () => {
 
-    const { patch, setPatch, defaultPatch } = useContext(PatchContext);
+    const { patch, setPatch, defaultPatch, patchBank, setPatchBank } = useContext(PatchContext);
     const { user } = useContext(AuthContext);
 
     const [showExportModal, setShowExportModal] = useState<boolean>(false);
@@ -20,7 +18,6 @@ const Sidebar: React.FC = () => {
     const [currentPatchName, setCurrentPatchName] = useState<string>("untitled-patch");
     const [currentPatchNameVal, setCurrentPatchNameVal] = useState<string>("untitled-patch");
 
-    const [patchBank, setPatchBank] = useState<PatchModel[]>([]);
     const [patchBankIndex, setPatchBankIndex] = useState<number>(-1);
 
     const inputRef = useRef<any>();
@@ -130,6 +127,8 @@ const Sidebar: React.FC = () => {
 
     const renderPatchBank = () => {
         
+        if (!patchBank) return <p>Empty</p>;
+
         const savedPatches = patchBank.map((patch, index) => {
             return (
                 <div className='flex gap-x-4' key={`patch-${patch._id}`}>

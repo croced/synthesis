@@ -95,8 +95,8 @@ const Mixer: React.FC = () => {
             <div className="mt-2">
                 <label htmlFor="fmIndexSelect">Modulation:</label>
                 <div className="flex">
-                    <div className="w-3/4">
-                        <input type="range" name="fmIndexSelectSlider" id="fmIndexSelectSlider" min="0" max="100" step="1" value={patch.mixer.fmModIndex} onChange={handleFmIndexChange}/>
+                    <div className="w-full">
+                        <input type="range" className="w-full" name="fmIndexSelectSlider" id="fmIndexSelectSlider" min="0" max="100" step="1" value={patch.mixer.fmModIndex} onChange={handleFmIndexChange}/>
                     </div>
                     <input type="number" name="fmIndexSelect" id="fmIndexSelect" min="0" max="100" step="1" value={patch.mixer.fmModIndex} onChange={handleFmIndexChange}/>
                 </div>

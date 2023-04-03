@@ -1,7 +1,7 @@
 import React from 'react';
 import './index.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { defaultPatch, PatchContext } from './context/PatchContext';
+import { defaultPatch, PatchContext, PatchModel } from './context/PatchContext';
 import { AuthProvider } from './reducers/AuthReducer';
 import AuthView from './views/AuthView';
 import SynthView from './views/SynthView/SynthView';
@@ -10,7 +10,9 @@ import Navbar from './components/Navbar';
 const App: React.FC = () => {
 
   const [patch, setPatch] = React.useState(defaultPatch);
-  const patchVal = { patch, setPatch, defaultPatch };
+  const [patchBank, setPatchBank] = React.useState<PatchModel[]>([]);
+
+  const patchVal = { defaultPatch, patch, setPatch, patchBank, setPatchBank };
 
   return (
     <AuthProvider>
