@@ -1,11 +1,20 @@
 import { createContext } from 'react';
-import { IPatch } from '../engine/AudioEngine';
+import { IFilter, IPatch } from '../types/Synthesiser';
 
 export type PatchModel = IPatch & {_id: any};
 
 /**
  * The default patch to use when the app is loaded.
  */
+
+
+export const defaultFilter: IFilter = {
+    type: "lowpass",
+    frequency: 1000,
+    emphasis: 1,
+    gain: 0,
+    signal: '1'
+};
 
 export const defaultPatch: IPatch = {
     meta: {
@@ -24,6 +33,9 @@ export const defaultPatch: IPatch = {
             detune: 0,
             octave: 0,
         },
+    ],
+    filters: [
+        defaultFilter
     ],
     mixer: {
       type: "volume",

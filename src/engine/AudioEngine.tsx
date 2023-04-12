@@ -1,34 +1,8 @@
 import { IStatusMessage } from "./MIDIEngine";
 import { noteToFreq } from "../util/util";
+import { IPatch } from "../types/Synthesiser";
 
 const MAX_VOLUME = 0.5 as const;
-
-// External facing interfaces (e.g. can be saved as JSON files)
-
-interface IMetaData {
-    version: number;
-    author: string;
-    name: string;
-}
-
-interface IOscillator {
-    waveType: "sine" | "square" | "sawtooth" | "triangle";
-    detune?: number;
-    octave?: number;
-}
-
-interface IMixer {
-    type: "volume" | "additive" | "am" | "fm";
-    mix: number;
-    carrierOsc?: 0 | 1;     // only used for AM & FM, 0 = osc1, 1 = osc2
-    fmModIndex?: number;    // only used for FM
-}
-
-export interface IPatch {
-    meta: IMetaData;
-    oscillators: IOscillator[];
-    mixer: IMixer;
-}
 
 // Internal interfaces, used for WebAudioAPI
 interface InternalOscillator {
@@ -55,7 +29,6 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
     log('-------------- HANDLE MIDI EVENT --------------')
 
     const note = event.pitch! || 0;
-    const noteFreq = noteToFreq(note);
 
     // const osc1AdjustedOctave = note - (patch.oscillators[0].octave || 0 * 12);
 
@@ -64,8 +37,10 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
         log(`-> noteon detected: ${note}`);
 
         // master volume gain node
-        const masterVolume = audioCtx.createGain();
-        masterVolume.gain.value = MAX_VOLUME;
+        let postMixNode = audioCtx.createGain();
+
+        let masterVolumeNode = audioCtx.createGain();
+        masterVolumeNode.gain.value = MAX_VOLUME;
 
         // create oscillator nodes
         const osc1 = audioCtx.createOscillator();
@@ -87,12 +62,63 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
         const osc2v = audioCtx.createGain();
         osc2v.gain.value = scaledVelocity;
         
-        osc1.connect(osc1v);
-        osc2.connect(osc2v);
+        /** PRE-MIXING FILTERS */
+        if (patch.filters && patch.filters.length > 0) {
 
-        // todo: pre-mix filters can go here
+            let osc1HasFilter = false;
+            let osc2HasFilter = false;
 
-        // perform mixing
+            // Loop through the filters
+            patch.filters.forEach((filter) => {
+
+                if (filter.signal === "1") {
+                    const biquadFilter = audioCtx.createBiquadFilter();
+                    biquadFilter.type = filter.type;
+                    biquadFilter.frequency.value = filter.frequency;
+                    biquadFilter.gain.value = filter.gain;
+                    
+                    // Check if there is a previous filter for this signal
+                    const previousFilter = osc1.numberOfInputs > 0 ? osc1 : null;
+                    
+                    // Connect the filter to the previous filter or the osc1 node
+                    if (previousFilter)
+                        previousFilter.connect(biquadFilter);
+                    else
+                        osc1.connect(biquadFilter);
+                    
+                    biquadFilter.connect(osc1v);
+                    osc1HasFilter = true;
+                } else if (filter.signal === "2") {
+
+                    const biquadFilter = audioCtx.createBiquadFilter();
+                    biquadFilter.type = filter.type;
+                    biquadFilter.frequency.value = filter.frequency;
+                    biquadFilter.gain.value = filter.gain;
+                    
+                    // Check if there is a previous filter for this signal
+                    const previousFilter = osc2.numberOfInputs > 0 ? osc2 : null;
+                    
+                    // Connect the filter to the previous filter or the osc2 node
+                    if (previousFilter)
+                        previousFilter.connect(biquadFilter);
+                    else
+                        osc2.connect(biquadFilter);
+                    
+                    biquadFilter.connect(osc2v);
+                    osc2HasFilter = true;
+                }
+            });
+
+            // If no filters were found for a signal, connect the osc to the gain node
+            if (!osc1HasFilter) osc1.connect(osc1v);
+            if (!osc2HasFilter) osc2.connect(osc2v);
+
+        } else {
+            osc1.connect(osc1v);
+            osc2.connect(osc2v);
+        }
+    
+        /** MIXING */
         switch (patch.mixer.type)
         {
             case "volume":
@@ -106,15 +132,15 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
                     osc1v.connect(osc1Gain);
                     osc2v.connect(osc2Gain);
 
-                    osc1Gain.connect(masterVolume);
-                    osc2Gain.connect(masterVolume);
+                    osc1Gain.connect(postMixNode);
+                    osc2Gain.connect(postMixNode);
                 }
                 break;
             case "additive":
-                    osc1v.connect(masterVolume);
-                    osc2v.connect(masterVolume);
+                    osc1v.connect(postMixNode);
+                    osc2v.connect(postMixNode);
                     
-                    masterVolume.gain.value = MAX_VOLUME / 2;
+                    masterVolumeNode.gain.value = MAX_VOLUME / 2;
                 break;
             case "am":
                 {            
@@ -126,7 +152,7 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
                         osc1v.connect(carrierGain);
                         osc2v.connect(modulatorGain);
 
-                        carrierGain.connect(masterVolume);
+                        carrierGain.connect(postMixNode);
                         modulatorGain.connect(carrierGain.gain);
                     } 
                     else
@@ -134,28 +160,13 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
                         osc1v.connect(modulatorGain);
                         osc2v.connect(carrierGain);
                         
-                        carrierGain.connect(masterVolume);
+                        carrierGain.connect(postMixNode);
                         modulatorGain.connect(carrierGain.gain);
                     }
                 }
                 break;
             case "fm":
                 {
-                    // const modulatorGain = audioCtx.createGain();
-                    // modulatorGain.gain.value = patch.mixer.fmModIndex || 50;
-
-                    // if (patch.mixer.carrierOsc === 0)
-                    // {
-                    //     osc2v.connect(modulatorGain);
-                    //     modulatorGain.connect(osc1.detune);
-                    //     osc1v.connect(masterVolume);
-                    // }
-                    // else {
-                    //     osc1v.connect(modulatorGain);
-                    //     modulatorGain.connect(osc2.detune);
-                    //     osc2v.connect(masterVolume);
-                    // }
-
                     const normalizedModIndex = (patch.mixer.fmModIndex || 50) / 100;
                     const modDepth = audioCtx.createGain();
                     
@@ -166,7 +177,7 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
                         osc2v.connect(modDepth);
                         modDepth.connect(osc1.frequency);
 
-                        osc1v.connect(masterVolume);
+                        osc1v.connect(postMixNode);
                     } 
                     else
                     {
@@ -175,19 +186,50 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
                         osc1v.connect(modDepth);
                         modDepth.connect(osc2.frequency);
 
-                        osc2v.connect(masterVolume);
+                        osc2v.connect(postMixNode);
                     }
                     
-                    masterVolume.gain.value = MAX_VOLUME / 2;
+                    masterVolumeNode.gain.value = MAX_VOLUME / 2;
                 }
                 break;
             default:
                 break;
         }
-        
-        // todo: post-mix filters can go here
 
-        masterVolume.connect(audioCtx.destination);
+        /** POST-MIXING FILTERS */
+        if (patch.filters && patch.filters.length > 0) {
+
+            // Create and connect filter nodes based on filter objects
+            for (let i = 0; i < patch.filters.length; i++) {
+                const filter = patch.filters[i];
+
+                // Check if filter is of type "combined"
+                if (filter.signal !== "combined") {
+                    continue; // Skip this filter and move to the next one
+                }
+
+                // Create BiquadFilterNode and set its parameters based on filter object
+                const filterNode = audioCtx.createBiquadFilter();
+                filterNode.type = filter.type;
+                filterNode.frequency.value = filter.frequency;
+                filterNode.gain.value = filter.gain;
+                filterNode.Q.value = filter.emphasis;
+
+                // Connect filterNode to the current node in the chain
+                postMixNode.connect(filterNode);
+
+                // Update postSourceNode to the newly created filterNode
+                postMixNode = filterNode;
+            }
+
+            // Connect last filter node to volumeNode
+            postMixNode.connect(masterVolumeNode);
+        }
+        else
+            postMixNode.connect(masterVolumeNode);
+
+        /** Connect master volume node to output, and start oscillators! */
+        masterVolumeNode.connect(audioCtx.destination);
 
         osc1.start();
         osc2.start();
@@ -198,6 +240,7 @@ export function handleMidiEvent(event: IStatusMessage, patch: IPatch, audioCtx: 
     {
         log(`-> noteoff event detected for note: ${note}`);
 
+        
         oscillatorMap.map((osc, index) => {
             if (osc.pitch === note) {
                 osc.osc1.disconnect();

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { defaultPatch, PatchContext } from '../../context/PatchContext';
+import { defaultFilter, defaultPatch, PatchContext } from '../../context/PatchContext';
 import { handleMidiEvent } from '../../engine/AudioEngine';
 import { GetMIDIMessage, IStatusMessage } from '../../engine/MIDIEngine';
 import Card from './components/Card';
@@ -9,6 +9,7 @@ import clsx from 'clsx';
 import { AuthContext } from '../../reducers/AuthReducer';
 import { useNavigate } from "react-router-dom";
 import Sidebar from './Sidebar';
+import Filter from './components/Filter';
 
 const SynthView: React.FC = () => {
 
@@ -18,7 +19,7 @@ const SynthView: React.FC = () => {
     const [contextStarted, setContextStarted] = useState(false);
 
     const { authState } = useContext(AuthContext);
-    const { patch } = useContext(PatchContext);
+    const { patch, setPatch } = useContext(PatchContext);
 
     let navigate = useNavigate();
 
@@ -119,6 +120,32 @@ const SynthView: React.FC = () => {
         else log(midiMessage)
     }
 
+    const handleAddFilter = () => {
+        if (!patch.filters)
+            patch.filters = [];
+
+        setPatch({...patch, filters: [...patch.filters, defaultFilter]});
+    };
+
+    const renderFilters = () => {
+
+        const addFilterButton = (
+            <button name="addFilterBtn" className="bg-gray-200 text-black border-2 border-gray-500 p-4 rounded-md w-full" onClick={handleAddFilter}>Add Filter</button>
+        );
+
+        if (!patch.filters || patch.filters.length === 0)
+            return addFilterButton;
+
+        return (
+            <div>
+                <div className='flex flex-col'>
+                    { patch.filters.map((_filter, i) => <Filter key={`filter-${i}`} id={i} />) }
+                </div>
+                {addFilterButton}
+            </div>
+        )
+    }
+
     return (
         <>
             <div className="flex flex-row flex-grow">                
@@ -148,9 +175,7 @@ const SynthView: React.FC = () => {
 
                         {/* Filters */}
                         <div className='w-full'>
-                            <Card title="FILTER">
-                                (Filters go here)
-                            </Card>
+                            {renderFilters()}
                         </div>
                     </div>
                 </div>

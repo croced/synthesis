@@ -4,7 +4,6 @@ import { useContext, useEffect, useRef, useState} from 'react';
 import { Link } from 'react-router-dom';
 import Modal from '../../components/Modal';
 import { PatchContext } from '../../context/PatchContext';
-import { IPatch } from '../../engine/AudioEngine';
 import { AuthContext } from '../../reducers/AuthReducer';
 
 const Sidebar: React.FC = () => {

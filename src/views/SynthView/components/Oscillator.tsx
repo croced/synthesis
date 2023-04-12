@@ -68,7 +68,7 @@ const Oscillator: React.FC<Props> = ({ id }) => {
                 <div className="w-full mr-4">
                     <label htmlFor="oscillatorTypes">Type:</label>
                     <div className="flex">
-                        <select name="oscillatorTypes" id="oscillatorTypes" onChange={(e) => handleWaveTypeChange(e, id as 0 | 1)}>
+                        <select name="oscillatorTypes" id="oscillatorTypes" value={patch.oscillators[id].waveType} onChange={(e) => handleWaveTypeChange(e, id as 0 | 1)}>
                             <option value="sine">Sine</option>
                             <option value="square">Square</option>
                             <option value="sawtooth">Sawtooth</option>
