@@ -3,6 +3,7 @@ import _ from 'lodash';
 import React, { useEffect, useCallback } from 'react';
 import { PatchModel } from '../../context/PatchContext';
 import Sidebar from './Sidebar';
+import PatchCard from '../../components/PatchCard';
 
 const PatchBrowser: React.FC = () => {
 
@@ -64,12 +65,10 @@ const PatchBrowser: React.FC = () => {
     const renderSearchResults = () => {
         if (!searchResults) return <p>(Empty)</p>;
 
-        return searchResults.map((patch, index) => {
+        return searchResults.map((patch) => {
             return (
-                <div className='flex gap-x-4' key={`patch-${patch._id}`}>
-                    <p key={index} className='hover:cursor-pointer'>
-                        <span>{index + 1}: {patch.meta.name}</span>
-                    </p>
+                <div key={`patch-card-${patch._id}`}>
+                    <PatchCard patch={patch} />
                 </div>
             )
         });
@@ -100,7 +99,9 @@ const PatchBrowser: React.FC = () => {
                         {/* results list */}
                         <div className='mt-4'>
                             <p className='font-bold mb-4'>Showing: {searchText.length >= 3 ? `Results for '${searchText}'...` : "(All patches)"}</p>
-                            {renderSearchResults()}
+                            <div className='flex flex-col gap-y-4'>
+                                {renderSearchResults()}
+                            </div>
                         </div> 
                     </div>
                 </div>

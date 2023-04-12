@@ -33,17 +33,19 @@ const Sidebar: React.FC = () => {
 
         const savedPatches = patchBank.map((patch, index) => {
             return (
-                <div className='flex gap-x-4' key={`patch-${patch._id}`}>
+                <div className='relative flex flex-row gap-x-4' key={`patch-${patch._id}`}>
                     <p key={index} className='hover:cursor-pointer'>
                             <span>{index + 1}: {patch.meta.name}</span>
                     </p>
-                    <Link to={`/patches/${patch._id}`}>(info)</Link>
+                    <div className='absolute right-0'>
+                        <Link to={`/patches/${patch._id}`}>(info)</Link>
+                    </div>
                 </div>
             )
         });
         
         return (
-            <div className='flex gap-x-12'>
+            <div className='flex flex-col'>
                 {savedPatches}
             </div>
         )

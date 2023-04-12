@@ -112,13 +112,13 @@ const Sidebar: React.FC = () => {
 
         reader.onload = (e) => {
             try {
-            const loadedPatch = JSON.parse(e.target!.result as string);
-            if (!loadedPatch.meta || !loadedPatch.oscillators || !loadedPatch.mixer)
-                throw new Error('Invalid patch file!');
+                const loadedPatch = JSON.parse(e.target!.result as string);
+                if (!loadedPatch.meta || !loadedPatch.oscillators || !loadedPatch.mixer)
+                    throw new Error('Invalid patch file!');
 
-            setPatch(loadedPatch);
+                setPatch(loadedPatch);
             } catch (error) {
-            console.error('Invalid JSON file!');
+                console.error('Invalid JSON file!');
             }
         };
 
@@ -131,44 +131,23 @@ const Sidebar: React.FC = () => {
 
         const savedPatches = patchBank.map((patch, index) => {
             return (
-                <div className='flex gap-x-4' key={`patch-${patch._id}`}>
+                <div className='flex flex-row relative' key={`patch-${patch._id}`}>
                     <p key={index} className={clsx('hover:cursor-pointer', {'underline': patchBankIndex === index + 1})}>
                             <span onClick={() => {
                                 setPatchBankIndex(index + 1);
                                 setPatch(patch);
                             }}>{index + 1}: {patch.meta.name}</span>
                     </p>
-                    <Link to={`/patches/${patch._id}`}>(info)</Link>
+                    <div className='absolute right-0'>
+                        <Link to={`/patches/${patch._id}`}>(info)</Link>
+                    </div>
                 </div>
             )
         });
         
         return (
-            <div className='flex gap-x-12 mt-4'>
-                <div>
-                    {/* <p className={clsx('hover:cursor-pointer', {'underline': patchBankIndex === 0})}>
-                        <span onClick={handleTestPatchClick}>001: test-patch</span>
-                    </p> */}
-                    {/* <p>
-                        <span className='text-gray-500'>002: flute</span>
-                    </p>
-                    <p>
-                        <span className='text-gray-500'>003: string ensemble</span>
-                    </p> */}
-
-                    {savedPatches}
-                </div>
-                {/* <div>
-                    <p>
-                        <span className='text-gray-500'>004: chime</span>
-                    </p>
-                    <p>
-                        <span className='text-gray-500'>005: swarm</span>
-                    </p>
-                    <p>
-                        <span className='text-gray-500'>006: kick-1</span>
-                    </p>
-                </div> */}
+            <div className='flex flex-col gap-x-12'>
+                {savedPatches}
             </div>
         )
     }
@@ -274,7 +253,9 @@ const Sidebar: React.FC = () => {
                         </div>
                         <p className='mt-4 font-bold'>My Patch Bank</p>
                         <p className="hover:cursor-pointer" onClick={handlePatchReset}>(reset)</p>
-                        { renderPatchBank() }
+                        <div className='mt-2'>
+                            { renderPatchBank() }
+                        </div>
                     </div>
                 </div>
 
