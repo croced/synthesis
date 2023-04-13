@@ -3,12 +3,14 @@ import clsx from 'clsx';
 import { useContext, useEffect, useRef, useState} from 'react';
 import { Link } from 'react-router-dom';
 import Modal from '../../components/Modal';
-import { PatchContext } from '../../context/PatchContext';
+import usePatchBank, { PatchContext } from '../../context/PatchContext';
 import { AuthContext } from '../../reducers/AuthReducer';
 
 const Sidebar: React.FC = () => {
 
-    const { patch, setPatch, defaultPatch, patchBank, setPatchBank } = useContext(PatchContext);
+    const { patch, setPatch, defaultPatch } = useContext(PatchContext);
+    const { patchBank, pushToPatchBank } = usePatchBank();
+
     const { user } = useContext(AuthContext);
 
     const [showExportModal, setShowExportModal] = useState<boolean>(false);
@@ -21,27 +23,6 @@ const Sidebar: React.FC = () => {
 
     const inputRef = useRef<any>();
 
-    useEffect(() => {
-        (async () => {
-
-            if (!user) return;
-
-            try {
-                const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/getPatches/${user}`);
-                if (res.data.patches)
-                {
-                    setPatchBank(res.data.patches);
-                } else console.log('User has no patches! Patch bank will be lonely...');
-            } 
-            catch (err: any) {
-                console.log("Something went wrong!");
-            }
-        })();
-    }, []);
-
-    useEffect(() => {
-        console.log(`My patch bank:`, patchBank);
-    }, [patchBank]);
     
     const exportPatch = () => {
 
@@ -50,7 +31,7 @@ const Sidebar: React.FC = () => {
             ...patch,
             meta: {
                 version: 1,
-                author: "synthesis",
+                author: user,
                 name: currentPatchNameVal || "untitled-patch"
             }
         };
@@ -74,7 +55,7 @@ const Sidebar: React.FC = () => {
             ...patch,
             meta: {
                 version: 1,
-                author: "synthesis",
+                author: user,
                 name: currentPatchNameVal || "untitled-patch"
             }
         };
@@ -94,7 +75,7 @@ const Sidebar: React.FC = () => {
 
             console.log("Patch published!", res.data.patch);
 
-            setPatchBank([...patchBank, res.data.patch]);
+            pushToPatchBank(res.data.patch._id);
             setPatchBankIndex(patchBank.length + 1);
         } 
         catch (err: any) {

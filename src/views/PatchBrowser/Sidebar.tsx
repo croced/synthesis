@@ -1,31 +1,13 @@
 import axios from 'axios';
 import { useContext, useEffect} from 'react';
 import { Link } from 'react-router-dom';
-import { PatchContext } from '../../context/PatchContext';
+import usePatchBank, { PatchContext } from '../../context/PatchContext';
 import { AuthContext } from '../../reducers/AuthReducer';
 
 const Sidebar: React.FC = () => {
 
-    const { patchBank, setPatchBank } = useContext(PatchContext);
+    const { patchBank, removeFromPatchBank } = usePatchBank();
     const { user } = useContext(AuthContext);
-
-    useEffect(() => {
-        (async () => {
-
-            if (!user) return;
-
-            try {
-                const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/getPatches/${user}`);
-                if (res.data.patches)
-                {
-                    setPatchBank(res.data.patches);
-                } else console.log('User has no patches! Patch bank will be lonely...');
-            } 
-            catch (err: any) {
-                console.log("Something went wrong!");
-            }
-        })();
-    }, [user, setPatchBank]);
 
     const renderPatchBank = () => {
         
@@ -37,9 +19,15 @@ const Sidebar: React.FC = () => {
                     <p key={index} className='hover:cursor-pointer'>
                             <span>{index + 1}: {patch.meta.name}</span>
                     </p>
-                    <div className='absolute right-0'>
+                    <div className='absolute right-0 flex flex-row'>
                         <Link to={`/patches/${patch._id}`}>(info)</Link>
+                        {
+                            patch.meta.author !== user ? (
+                                <p className="hover:cursor-pointer" onClick={() => removeFromPatchBank(patch._id)}>(remove)</p>
+                            ) : null
+                        }
                     </div>
+                  
                 </div>
             )
         });

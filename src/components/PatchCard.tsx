@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PatchContext, PatchModel } from '../context/PatchContext';
+import usePatchBank, { PatchContext, PatchModel } from '../context/PatchContext';
 
 interface PatchCardProps {
     patch: PatchModel;
@@ -9,16 +9,10 @@ interface PatchCardProps {
 
 const PatchCard: React.FC<PatchCardProps> = ({patch}) => {
 
-    const {patchBank, setPatchBank, setPatch} = useContext(PatchContext);
+    const { setPatch } = useContext(PatchContext);
+    const { patchBank, pushToPatchBank } = usePatchBank();
 
     let navigate = useNavigate();
-
-    const handleAddPatch = (patch: PatchModel) => {
-
-        if (patchInBank(patch)) return;
-
-        setPatchBank([...patchBank, patch]);
-    };
 
     const handlePlayPatch = (patch: PatchModel) => {
         setPatch(patch);
@@ -52,9 +46,9 @@ const PatchCard: React.FC<PatchCardProps> = ({patch}) => {
                     <div className='ml-4'>
                         <p 
                             className={clsx('hover:cursor-pointer', { 'hover:cursor-default text-gray-600': patchInBank(patch) })}
-                            onClick={() => handleAddPatch(patch)}
+                            onClick={() => pushToPatchBank(patch._id)}
                         >
-                            {patchInBank(patch) ? '(Patch in bank)' : '(Add to my bank)'}
+                            { patchInBank(patch) ? '(Patch in bank)' : '(Add to my bank)' }
                         </p>
                         <p className='hover:cursor-pointer' onClick={() => handlePlayPatch(patch)}>(Play patch)</p>
                     </div>
